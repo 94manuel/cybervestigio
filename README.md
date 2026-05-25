@@ -7,6 +7,7 @@ Proyecto funcional base para la presencia digital de **CyberVestigio**, orientad
 - **Frontend Next.js** con App Router y renderizado dinámico en servidor (SSR) para las páginas públicas y el panel administrativo.
 - **Backend NestJS** con API REST, autenticación JWT, documentación Swagger y validación de solicitudes.
 - **PostgreSQL + Prisma ORM** para almacenar contactos, servicios, contenido corporativo y usuarios administrativos.
+- **Chat web integrado con n8n** para responder preguntas sobre metodología, procesos y orientación inicial desde el sitio público.
 - **Panel administrativo** protegido para revisar contactos, cambiar estados, administrar servicios y editar el contenido principal del sitio.
 - **Identidad visual aplicada** con el logo suministrado y la paleta institucional de CyberVestigio.
 - Docker Compose para la base de datos y migración inicial lista para ejecutar.
@@ -50,10 +51,10 @@ Las vistas de Next.js consultan la API NestJS desde el servidor utilizando `cach
 npm install
 ```
 
-### 2. Iniciar PostgreSQL
+### 2. Iniciar servicios base
 
 ```bash
-docker compose up -d postgres
+docker compose up -d postgres n8n
 ```
 
 ### 3. Configurar variables de entorno
@@ -73,6 +74,46 @@ Copy-Item apps/web/.env.example apps/web/.env.local
 ```
 
 Antes de producción, cambie obligatoriamente `JWT_SECRET`, `ADMIN_INITIAL_PASSWORD` y las credenciales de la base de datos.
+
+### 3.1. Configurar el chat con n8n
+
+En `apps/web/.env.local` configure el webhook del flujo conversacional:
+
+```env
+N8N_CHAT_WEBHOOK_URL=http://localhost:5678/webhook/cybervestigio-chat
+N8N_CHAT_WEBHOOK_TOKEN=
+```
+
+Si ejecuta el sitio con Docker Compose, declare las mismas variables en el `.env` raíz para que lleguen al contenedor `web`.
+
+Si usa el `docker-compose.yml` de este proyecto, el valor recomendado en el `.env` raíz es:
+
+```env
+N8N_CHAT_WEBHOOK_URL=http://n8n:5678/webhook/cybervestigio-chat
+```
+
+La interfaz local de n8n queda disponible en `http://localhost:5678`.
+
+El frontend envía a n8n un `POST` JSON con este formato base:
+
+```json
+{
+	"message": "¿Cómo documentan la cadena de custodia?",
+	"sessionId": "uuid-o-token-de-sesion",
+	"history": [
+		{ "role": "assistant", "content": "..." },
+		{ "role": "user", "content": "..." }
+	],
+	"source": "cybervestigio-web",
+	"currentPath": "/metodologia",
+	"requestedAt": "2026-05-24T00:00:00.000Z",
+	"siteUrl": "http://localhost:3000"
+}
+```
+
+La respuesta de n8n puede ser texto plano o JSON con alguna de estas claves: `reply`, `message`, `text`, `answer`, `output`, `response` o `content`.
+
+En este repositorio también queda un flujo base importable en `docs/n8n-chat-workflow.json` y una guía rápida en `docs/n8n-chat.md`.
 
 ### 4. Crear la base y datos iniciales
 
@@ -156,3 +197,8 @@ Los textos del sitio evitan afirmar certificaciones, acreditaciones o calidad de
 
 - El frontend fue validado con `npm run lint --workspace=@cybervestigio/web` y `npm run build --workspace=@cybervestigio/web`. Las páginas del sitio y del panel se compilaron como rutas dinámicas renderizadas en servidor.
 - El backend, la migración y la semilla están implementados con Prisma ORM 7 y el adaptador PostgreSQL. En el entorno de generación del entregable no fue posible descargar el motor de Prisma porque el dominio de binarios de Prisma no resolvió desde la red del entorno. Por esta razón, el cliente generado se crea al ejecutar `npm run db:generate` en el equipo de desarrollo con acceso a internet, antes de compilar o iniciar la API.
+
+n8n quedó en http://localhost:5678.
+
+Usuario: admin@cybervestigio.localr
+Clave: CybervestigioN8n2026!

@@ -21,6 +21,23 @@ services:
       timeout: 5s
       retries: 10
 
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: cybervestigio-n8n
+    restart: unless-stopped
+    environment:
+      N8N_HOST: localhost
+      N8N_PORT: 5678
+      N8N_PROTOCOL: http
+      N8N_EDITOR_BASE_URL: http://localhost:5678
+      WEBHOOK_URL: http://localhost:5678/
+      GENERIC_TIMEZONE: America/Bogota
+      TZ: America/Bogota
+    ports:
+      - "5678:5678"
+    volumes:
+      - cybervestigio_n8n_data:/home/node/.n8n
+
   api:
     <<: *app-base
     build:
@@ -67,6 +84,8 @@ services:
       PORT: 3000
       API_INTERNAL_URL: http://api:4000/api/v1
       NEXT_PUBLIC_SITE_URL: http://localhost:3000
+      N8N_CHAT_WEBHOOK_URL: ${N8N_CHAT_WEBHOOK_URL:-}
+      N8N_CHAT_WEBHOOK_TOKEN: ${N8N_CHAT_WEBHOOK_TOKEN:-}
     command: >
       sh -c "npm run dev -- --hostname 0.0.0.0"
     ports:
@@ -80,3 +99,4 @@ services:
 
 volumes:
   cybervestigio_pg_data:
+  cybervestigio_n8n_data:

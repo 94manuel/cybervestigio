@@ -14,7 +14,7 @@ export default function NotFound() {
           <p><Link className="button button--primary" href="/">Volver al inicio</Link></p>
         </div>
       </main>
-      <SiteFooter />
+      <SiteFooter showChat={false} />
     </>
   );
 }

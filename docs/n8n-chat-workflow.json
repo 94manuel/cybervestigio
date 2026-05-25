@@ -1,0 +1,54 @@
+{
+  "id": "cybervestigio-chat-starter",
+  "name": "CyberVestigio Chat Starter",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "cybervestigio-chat",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "a1f8e3f0-b1e8-4b8a-bb67-4a27bf1f1e01",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        260,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const payload = $json.body ?? $json;\nconst message = String(payload.message ?? '').trim();\nconst currentPath = String(payload.currentPath ?? '/');\nconst sessionId = String(payload.sessionId ?? '');\nconst history = Array.isArray(payload.history) ? payload.history : [];\nconst normalized = message.toLowerCase();\n\nconst processSteps = [\n  '1. Recepcion y alcance del caso.',\n  '2. Preservacion de la evidencia digital.',\n  '3. Analisis tecnico de artefactos relevantes.',\n  '4. Informe verificable con hallazgos y conclusiones.'\n].join(' ');\n\nlet reply = 'Puedo orientarte sobre metodologia, preservacion, cadena de custodia, alcance del servicio y preparacion inicial del caso. Si tu situacion requiere analisis formal, usa tambien el formulario de contacto.';\n\nif (!message) {\n  reply = 'Escribe tu consulta y te orientare sobre los procesos de CyberVestigio.';\n} else if (/cadena de custodia|custodia/.test(normalized)) {\n  reply = 'La cadena de custodia se orienta a identificar, recibir, documentar, transferir, analizar y entregar la evidencia con trazabilidad. Antes de manipular un dispositivo o cuenta, conviene registrar origen, fecha, responsable, estado y cualquier accion realizada.';\n} else if (/preserv|evidencia|integridad|hash/.test(normalized)) {\n  reply = 'La preservacion busca evitar alteraciones sobre la evidencia. En terminos generales, se recomienda no seguir usando el dispositivo, documentar el contexto, limitar accesos, conservar metadatos y aplicar controles de integridad como valores hash cuando corresponda.';\n} else if (/proceso|metodolog|pasos|etapas/.test(normalized)) {\n  reply = `El proceso base de CyberVestigio contempla estas etapas: ${processSteps}`;\n} else if (/tiempo|demora|plazo/.test(normalized)) {\n  reply = 'Los tiempos dependen del volumen de informacion, tipo de fuente, urgencia y alcance autorizado. Lo mas util es iniciar con una evaluacion del caso para definir evidencia disponible, restricciones y nivel de documentacion requerido.';\n} else if (/contact|correo|telefono|cotiz|precio|valor/.test(normalized)) {\n  reply = 'Para una evaluacion inicial y definir alcance, usa el formulario de contacto del sitio. Alli puedes describir el caso, la evidencia disponible y el objetivo tecnico o juridico que necesitas sustentar.';\n} else if (/whatsapp|llamar|asesor/.test(normalized)) {\n  reply = 'Si necesitas orientacion inicial, el canal mas ordenado es el formulario de contacto del sitio. Eso ayuda a registrar contexto, tipo de evidencia y prioridad antes de proponer el siguiente paso.';\n} else {\n  const pathHint = currentPath !== '/' ? ` Veo que la consulta se hizo desde ${currentPath}.` : '';\n  const historyHint = history.length > 0 ? ' Si lo deseas, puedes ampliar con mas contexto del caso, tipo de evidencia o etapa del proceso.' : '';\n  reply = `Puedo ayudarte con preguntas sobre metodologia forense, preservacion de evidencia digital, cadena de custodia y documentacion tecnica.${pathHint}${historyHint}`;\n}\n\nreturn [{\n  json: {\n    reply,\n    sessionId,\n    source: 'n8n-cybervestigio-chat',\n    receivedAt: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "c9f60c62-9d18-4c74-b3c1-4d0d6a4d4f72",
+      "name": "Build Reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        300
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Build Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "6bb1f4f0-9ef3-4c51-b35b-0ca8d9f5cf5f"
+}
