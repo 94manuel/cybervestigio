@@ -1,0 +1,19 @@
+{
+  "name": "cybervestigio-platform",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Plataforma web SSR y API administrativa de CyberVestigio.",
+  "workspaces": ["apps/*"],
+  "scripts": {
+    "dev:web": "npm run dev --workspace=@cybervestigio/web",
+    "dev:api": "npm run start:dev --workspace=@cybervestigio/api",
+    "build": "npm run build --workspace=@cybervestigio/api && npm run build --workspace=@cybervestigio/web",
+    "lint": "npm run lint --workspace=@cybervestigio/api && npm run lint --workspace=@cybervestigio/web",
+    "db:generate": "npm run prisma:generate --workspace=@cybervestigio/api",
+    "db:migrate": "npm run prisma:migrate --workspace=@cybervestigio/api",
+    "db:seed": "npm run prisma:seed --workspace=@cybervestigio/api"
+  },
+  "engines": {
+    "node": ">=20.19.0"
+  }
+}

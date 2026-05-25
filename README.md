@@ -1,0 +1,158 @@
+# CyberVestigio — Plataforma web y panel administrativo
+
+Proyecto funcional base para la presencia digital de **CyberVestigio**, orientada a servicios de informática forense, preservación de evidencia digital y cadena de custodia.
+
+## Entregables incluidos
+
+- **Frontend Next.js** con App Router y renderizado dinámico en servidor (SSR) para las páginas públicas y el panel administrativo.
+- **Backend NestJS** con API REST, autenticación JWT, documentación Swagger y validación de solicitudes.
+- **PostgreSQL + Prisma ORM** para almacenar contactos, servicios, contenido corporativo y usuarios administrativos.
+- **Panel administrativo** protegido para revisar contactos, cambiar estados, administrar servicios y editar el contenido principal del sitio.
+- **Identidad visual aplicada** con el logo suministrado y la paleta institucional de CyberVestigio.
+- Docker Compose para la base de datos y migración inicial lista para ejecutar.
+
+## Arquitectura
+
+```text
+cybervestigio-platform/
+├── apps/
+│   ├── web/            # Next.js: sitio SSR y panel admin
+│   └── api/            # NestJS: API, auth, Prisma, Swagger
+├── docs/               # arquitectura y API
+├── docker-compose.yml  # PostgreSQL local
+└── package.json        # workspace raíz
+```
+
+Las vistas de Next.js consultan la API NestJS desde el servidor utilizando `cache: "no-store"` y `dynamic = "force-dynamic"`. De esta manera, home, servicios y panel reciben información actual en cada solicitud sin exponer la comunicación privada del backend al navegador.
+
+## Paleta aplicada
+
+| Uso | HEX |
+|---|---|
+| Azul CyberVestigio Oscuro | `#001A47` |
+| Azul CyberVestigio Digital | `#0A92D3` |
+| Plata Forense | `#8491A0` |
+| Blanco Evidencia | `#FFFFFF` |
+| Fondo técnico claro | `#EFF8FC` |
+| Encabezados suaves | `#DCEFF7` |
+
+## Requisitos
+
+- Node.js 20.19 o superior, requerido por Prisma ORM 7
+- npm 10 o superior
+- Docker Desktop o una instalación local de PostgreSQL
+
+## Puesta en marcha local
+
+### 1. Instalar dependencias
+
+```bash
+npm install
+```
+
+### 2. Iniciar PostgreSQL
+
+```bash
+docker compose up -d postgres
+```
+
+### 3. Configurar variables de entorno
+
+En macOS o Linux:
+
+```bash
+cp apps/api/.env.example apps/api/.env
+cp apps/web/.env.example apps/web/.env.local
+```
+
+En Windows PowerShell:
+
+```powershell
+Copy-Item apps/api/.env.example apps/api/.env
+Copy-Item apps/web/.env.example apps/web/.env.local
+```
+
+Antes de producción, cambie obligatoriamente `JWT_SECRET`, `ADMIN_INITIAL_PASSWORD` y las credenciales de la base de datos.
+
+### 4. Crear la base y datos iniciales
+
+```bash
+npm run db:generate
+npm run db:migrate
+npm run db:seed
+```
+
+### 5. Ejecutar API y frontend
+
+En dos terminales:
+
+```bash
+npm run dev:api
+npm run dev:web
+```
+
+| Aplicación | Dirección local |
+|---|---|
+| Sitio web | `http://localhost:3000` |
+| Panel administrativo | `http://localhost:3000/admin/login` |
+| API | `http://localhost:4000/api/v1` |
+| Swagger | `http://localhost:4000/docs` |
+
+### Acceso administrativo inicial
+
+Los valores se configuran en `apps/api/.env`:
+
+```env
+ADMIN_INITIAL_EMAIL=admin@cybervestigio.co
+ADMIN_INITIAL_PASSWORD=Cambiar-Esta-Clave-123!
+```
+
+## Páginas implementadas
+
+### Sitio público
+
+- Inicio corporativo con hero, servicios, metodología, principios de evidencia y llamado a contacto.
+- Servicios.
+- Metodología forense.
+- Nosotros.
+- Contacto con formulario persistido en PostgreSQL.
+- Política de tratamiento de datos como texto inicial editable para revisión jurídica.
+
+### Panel administrativo
+
+- Inicio de sesión con JWT almacenado en cookie `httpOnly` desde Next.js.
+- Dashboard con indicadores de solicitudes.
+- Gestión de contactos y actualización de estados: nuevo, en revisión, atendido y archivado.
+- Gestión de servicios: creación, edición, activación y eliminación.
+- Configuración del contenido principal: título, subtítulo, correo, teléfono y ubicación.
+
+## Seguridad incluida y decisiones para producción
+
+Implementado en esta base:
+
+- Contraseñas cifradas con `bcryptjs`.
+- Autenticación JWT para endpoints administrativos.
+- Cookie administrativa `httpOnly` y `sameSite=lax` en el frontend.
+- Validación y transformación de DTOs mediante `class-validator`.
+- Cabeceras HTTP reforzadas mediante `helmet`.
+- CORS limitado mediante variable `FRONTEND_URL`.
+- Campo honeypot en el formulario público de contacto.
+
+Antes de publicar el sitio se debe incorporar: HTTPS obligatorio, gestor de secretos, CAPTCHA o protección antibots, rate limiting/WAF, registros de auditoría administrativa, respaldo cifrado de base de datos, política jurídica validada y monitoreo.
+
+## Consideración forense y legal
+
+Los textos del sitio evitan afirmar certificaciones, acreditaciones o calidad de perito judicial que no hayan sido formalmente obtenidas. La política de datos incorporada es una plantilla inicial; debe ser revisada antes de captar información real de clientes.
+
+## Tecnologías
+
+- Next.js App Router + TypeScript
+- NestJS + Swagger + JWT
+- Prisma ORM 7 + PostgreSQL
+- CSS corporativo responsive sin dependencia de un kit visual externo
+
+
+## Verificación realizada en la entrega
+
+- El frontend fue validado con `npm run lint --workspace=@cybervestigio/web` y `npm run build --workspace=@cybervestigio/web`. Las páginas del sitio y del panel se compilaron como rutas dinámicas renderizadas en servidor.
+- El backend, la migración y la semilla están implementados con Prisma ORM 7 y el adaptador PostgreSQL. En el entorno de generación del entregable no fue posible descargar el motor de Prisma porque el dominio de binarios de Prisma no resolvió desde la red del entorno. Por esta razón, el cliente generado se crea al ejecutar `npm run db:generate` en el equipo de desarrollo con acceso a internet, antes de compilar o iniciar la API.

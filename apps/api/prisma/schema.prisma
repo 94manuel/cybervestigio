@@ -1,0 +1,70 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum AdminRole {
+  ADMIN
+}
+
+enum ContactStatus {
+  NEW
+  IN_REVIEW
+  ATTENDED
+  ARCHIVED
+}
+
+model AdminUser {
+  id           String    @id @default(uuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  role         AdminRole @default(ADMIN)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model ContactRequest {
+  id        String        @id @default(uuid())
+  fullName  String
+  email     String
+  phone     String?
+  company   String?
+  service   String
+  message   String
+  consent   Boolean       @default(false)
+  status    ContactStatus @default(NEW)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Service {
+  id          String   @id @default(uuid())
+  slug        String   @unique
+  title       String
+  description String
+  icon        String
+  sortOrder   Int      @default(0)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model SiteSetting {
+  id              String   @id @default("main")
+  companyName     String   @default("CyberVestigio")
+  heroTitle       String
+  heroDescription String
+  contactEmail    String
+  contactPhone    String?
+  location        String
+  updatedAt       DateTime @updatedAt
+}

@@ -1,0 +1,7 @@
+.git
+.qodo
+.refact
+node_modules
+apps/api/dist
+apps/api/src/generated
+apps/web/.next
