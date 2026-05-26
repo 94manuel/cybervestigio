@@ -22,7 +22,7 @@ Uso:
   $(basename "${BASH_SOURCE[0]}") logs
 
 Descripcion:
-  Vigila cambios en la rama remota (por defecto master) y actualiza el repo local.
+  Vigila cambios en la rama remota (por defecto main) y actualiza el repo local.
   Si hay cambios, despliega SOLO frontend y backend con Docker Compose.
   Este CLI bloquea despliegues sobre base de datos y n8n.
 EOF
@@ -51,12 +51,35 @@ load_config() {
     exit 1
   fi
 
-  BRANCH="${BRANCH:-master}"
+  BRANCH="${BRANCH:-main}"
   AUTO_DEPLOY="${AUTO_DEPLOY:-true}"
   COMPOSE_WORKDIR="${COMPOSE_WORKDIR:-${REPO_PATH}}"
-  COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.yml}"
-  FRONT_SERVICE="${FRONT_SERVICE:-frontend}"
-  BACK_SERVICE="${BACK_SERVICE:-backend}"
+  COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.prod.yml}"
+  FRONT_SERVICE="${FRONT_SERVICE:-web}"
+  BACK_SERVICE="${BACK_SERVICE:-api}"
+}
+
+validate_allowed_project_service() {
+  local role_name="$1"
+  local service_name="$2"
+
+  case "${service_name}" in
+    web|api)
+      ;;
+    *)
+      echo "${role_name} invalido: ${service_name}"
+      echo "En este proyecto solo se permiten servicios: web y api"
+      exit 1
+      ;;
+  esac
+}
+
+validate_service_exists_in_compose() {
+  local service_name="$1"
+  if ! docker compose -f "${COMPOSE_FILE}" config --services | grep -qx "${service_name}"; then
+    echo "El servicio ${service_name} no existe en ${COMPOSE_FILE}"
+    exit 1
+  fi
 }
 
 validate_protected_service_name() {
@@ -81,6 +104,8 @@ deploy_front_back() {
 
   validate_protected_service_name "${FRONT_SERVICE}"
   validate_protected_service_name "${BACK_SERVICE}"
+  validate_allowed_project_service "FRONT_SERVICE" "${FRONT_SERVICE}"
+  validate_allowed_project_service "BACK_SERVICE" "${BACK_SERVICE}"
 
   if [[ "${FRONT_SERVICE}" == "${BACK_SERVICE}" ]]; then
     echo "FRONT_SERVICE y BACK_SERVICE no pueden ser iguales."
@@ -91,6 +116,8 @@ deploy_front_back() {
 
   (
     cd "${COMPOSE_WORKDIR}"
+    validate_service_exists_in_compose "${FRONT_SERVICE}"
+    validate_service_exists_in_compose "${BACK_SERVICE}"
     docker compose -f "${COMPOSE_FILE}" up -d --build --no-deps "${FRONT_SERVICE}" "${BACK_SERVICE}"
   )
 }
@@ -116,11 +143,11 @@ AUTO_DEPLOY="true"
 COMPOSE_WORKDIR="${repo_path}"
 
 # Archivo compose
-COMPOSE_FILE="docker-compose.yml"
+COMPOSE_FILE="docker-compose.prod.yml"
 
 # SOLO servicios permitidos para despliegue
-FRONT_SERVICE="frontend"
-BACK_SERVICE="backend"
+FRONT_SERVICE="web"
+BACK_SERVICE="api"
 EOF
 }
 
@@ -216,7 +243,7 @@ run_once() {
 
 install_cli() {
   local repo_path="${1:-$PWD}"
-  local branch="${2:-master}"
+  local branch="${2:-main}"
   local config_path="${CONFIG_PATH_DEFAULT}"
 
   if [[ ! -d "${repo_path}/.git" ]]; then
