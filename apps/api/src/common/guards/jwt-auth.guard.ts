@@ -6,11 +6,12 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
+import { AdminRole } from '../../generated/prisma/client';
 
 export interface AdminTokenPayload {
   sub: string;
   email: string;
-  role: string;
+  role: AdminRole;
   name: string;
 }
 

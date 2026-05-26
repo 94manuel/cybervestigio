@@ -16,8 +16,8 @@ async function main(): Promise<void> {
 
   await prisma.adminUser.upsert({
     where: { email: adminEmail },
-    update: { name: adminName, passwordHash },
-    create: { name: adminName, email: adminEmail, passwordHash },
+    update: { name: adminName, passwordHash, role: 'ADMIN' },
+    create: { name: adminName, email: adminEmail, passwordHash, role: 'ADMIN' },
   });
 
   await prisma.siteSetting.upsert({

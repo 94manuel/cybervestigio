@@ -1,13 +1,25 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { hash } from 'bcryptjs';
 import { ContactStatus } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { CreateAdminUserDto } from './dto/create-admin-user.dto';
 import { CreateServiceDto } from './dto/create-service.dto';
+import { UpdateAdminUserDto } from './dto/update-admin-user.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
 import { UpdateSiteSettingDto } from './dto/update-site-setting.dto';
 
 @Injectable()
 export class AdminService {
   constructor(private readonly prisma: PrismaService) {}
+
+  private readonly userSelection = {
+    id: true,
+    name: true,
+    email: true,
+    role: true,
+    createdAt: true,
+    updatedAt: true,
+  };
 
   async getDashboard(): Promise<object> {
     const [total, newContacts, reviewing, attended, latest] = await Promise.all([
@@ -60,6 +72,66 @@ export class AdminService {
       where: { id: 'main' },
       update: dto,
       create: { id: 'main', ...dto },
+    });
+  }
+
+  getUsers(): Promise<object[]> {
+    return this.prisma.adminUser.findMany({
+      select: this.userSelection,
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async createUser(dto: CreateAdminUserDto): Promise<object> {
+    const email = dto.email.toLowerCase();
+    const existing = await this.prisma.adminUser.findUnique({ where: { email } });
+    if (existing) {
+      throw new BadRequestException('Ya existe una cuenta con ese correo.');
+    }
+
+    const passwordHash = await hash(dto.password ?? 'Temporal-2026!', 12);
+
+    return this.prisma.adminUser.create({
+      data: {
+        name: dto.name,
+        email,
+        role: dto.role,
+        passwordHash,
+      },
+      select: this.userSelection,
+    });
+  }
+
+  async updateUser(id: string, dto: UpdateAdminUserDto): Promise<object> {
+    const current = await this.prisma.adminUser.findUnique({ where: { id } });
+    if (!current) {
+      throw new NotFoundException('Cuenta no encontrada.');
+    }
+
+    const email = dto.email ? dto.email.toLowerCase() : undefined;
+    if (email && email !== current.email) {
+      const other = await this.prisma.adminUser.findUnique({ where: { email } });
+      if (other) {
+        throw new BadRequestException('Ya existe una cuenta con ese correo.');
+      }
+    }
+
+    const data: {
+      name?: string;
+      email?: string;
+      role?: UpdateAdminUserDto['role'];
+      passwordHash?: string;
+    } = {};
+
+    if (dto.name) data.name = dto.name;
+    if (email) data.email = email;
+    if (dto.role) data.role = dto.role;
+    if (dto.password) data.passwordHash = await hash(dto.password, 12);
+
+    return this.prisma.adminUser.update({
+      where: { id },
+      data,
+      select: this.userSelection,
     });
   }
 }

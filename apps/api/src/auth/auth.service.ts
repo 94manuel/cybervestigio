@@ -1,6 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { compare } from 'bcryptjs';
+import { AdminRole } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
 
@@ -10,7 +11,7 @@ export interface AuthResponse {
     id: string;
     name: string;
     email: string;
-    role: string;
+    role: AdminRole;
   };
 }
 

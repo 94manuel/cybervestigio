@@ -54,3 +54,14 @@ export interface DashboardData {
   };
   latest: ContactRequest[];
 }
+
+export type AdminRole = 'ADMIN' | 'USER' | 'SUPERVISOR' | 'AUDITOR';
+
+export interface AdminAccount {
+  id: string;
+  name: string;
+  email: string;
+  role: AdminRole;
+  createdAt: string;
+  updatedAt: string;
+}

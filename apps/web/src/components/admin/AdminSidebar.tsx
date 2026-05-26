@@ -8,6 +8,7 @@ export function AdminSidebar() {
       <Logo compact />
       <nav className="admin-nav" aria-label="Administración">
         <Link href="/admin">Dashboard</Link>
+        <Link href="/admin/usuarios">Usuarios</Link>
         <Link href="/admin/contactos">Contactos</Link>
         <Link href="/admin/servicios">Servicios</Link>
         <Link href="/admin/configuracion">Configuración</Link>

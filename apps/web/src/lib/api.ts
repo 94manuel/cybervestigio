@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { DashboardData, HomeData, Service, SiteSettings, ContactRequest } from './types';
+import { AdminAccount, DashboardData, HomeData, Service, SiteSettings, ContactRequest } from './types';
 
 const apiUrl = process.env.API_INTERNAL_URL ?? 'http://localhost:4000/api/v1';
 
@@ -79,4 +79,5 @@ export const getDashboard = (token: string): Promise<DashboardData> => adminRequ
 export const getAdminContacts = (token: string): Promise<ContactRequest[]> => adminRequest('/admin/contacts', token);
 export const getAdminServices = (token: string): Promise<Service[]> => adminRequest('/admin/services', token);
 export const getAdminSettings = (token: string): Promise<SiteSettings> => adminRequest('/admin/settings', token);
+export const getAdminUsers = (token: string): Promise<AdminAccount[]> => adminRequest('/admin/users', token);
 export const getApiUrl = (): string => apiUrl;
