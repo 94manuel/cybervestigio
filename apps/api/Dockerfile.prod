@@ -34,4 +34,4 @@ COPY --from=builder /app/src/generated ./src/generated
 
 EXPOSE 4000
 
-CMD ["sh", "-c", "npm run prisma:deploy && npm run prisma:seed && node dist/main"]
+CMD ["sh", "-c", "npm run prisma:deploy && npm run prisma:seed && npm run start:prod"]
