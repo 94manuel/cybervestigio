@@ -9,10 +9,11 @@ export function BrowserProtection() {
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      const key = event.key.toLowerCase();
+      const rawKey = typeof event.key === 'string' ? event.key : '';
+      const key = rawKey.toLowerCase();
       const usesPrimaryModifier = event.ctrlKey || event.metaKey;
       const usesInspectorShortcut =
-        event.key === 'F12' ||
+        rawKey === 'F12' ||
         (usesPrimaryModifier && event.shiftKey && ['i', 'j', 'c', 'k'].includes(key)) ||
         (usesPrimaryModifier && key === 'u');
 
