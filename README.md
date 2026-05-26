@@ -181,6 +181,33 @@ Implementado en esta base:
 
 Antes de publicar el sitio se debe incorporar: HTTPS obligatorio, gestor de secretos, CAPTCHA o protección antibots, rate limiting/WAF, registros de auditoría administrativa, respaldo cifrado de base de datos, política jurídica validada y monitoreo.
 
+## Despliegue en VPS con Docker Compose
+
+Para una VPS use el archivo `docker-compose.prod.yml`, no el `docker-compose.yml` de desarrollo.
+
+1. Cree el archivo de variables desde la plantilla:
+
+```bash
+cp .env.prod.example .env.prod
+```
+
+2. Ajuste en `.env.prod` las claves de PostgreSQL, JWT, admin inicial y n8n, además de los dominios reales del sitio y de n8n.
+
+3. Levante el stack de producción:
+
+```bash
+docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
+```
+
+4. Verifique estado y logs:
+
+```bash
+docker compose --env-file .env.prod -f docker-compose.prod.yml ps
+docker compose --env-file .env.prod -f docker-compose.prod.yml logs -f api web n8n
+```
+
+El stack de producción expone `web` y `n8n` solo en `127.0.0.1`, deja `postgres` y `api` en red interna de Docker y ejecuta Next.js y NestJS en modo `production`.
+
 ## Consideración forense y legal
 
 Los textos del sitio evitan afirmar certificaciones, acreditaciones o calidad de perito judicial que no hayan sido formalmente obtenidas. La política de datos incorporada es una plantilla inicial; debe ser revisada antes de captar información real de clientes.
