@@ -87,4 +87,18 @@ export const getAdminClients = (token: string, search?: string): Promise<Client[
   adminRequest(`/admin/clients${search ? `?search=${encodeURIComponent(search)}` : ''}`, token);
 export const getAdminBillingServices = (token: string): Promise<BillingService[]> => adminRequest('/admin/billing-services', token);
 export const getAdminInvoices = (token: string): Promise<Invoice[]> => adminRequest('/admin/invoices', token);
+export async function getAdminInvoice(token: string, id: string): Promise<Invoice | null> {
+  const response = await fetch(`${apiUrl}/admin/invoices/${encodeURIComponent(id)}`, {
+    cache: 'no-store',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (response.status === 401) redirect('/admin/login?expired=1');
+  if (response.status === 404) return null;
+  if (!response.ok) throw new Error(`Operación administrativa fallida: ${response.status}`);
+  return response.json() as Promise<Invoice>;
+}
 export const getApiUrl = (): string => apiUrl;

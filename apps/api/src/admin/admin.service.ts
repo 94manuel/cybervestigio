@@ -458,6 +458,10 @@ export class AdminService {
     });
   }
 
+  getInvoice(id: string): Promise<object> {
+    return this.getInvoiceOrThrow(id);
+  }
+
   async createInvoice(dto: CreateInvoiceDto): Promise<object> {
     const invoiceNumber = dto.invoiceNumber.trim().toUpperCase();
     const existing = await this.prisma.invoice.findUnique({ where: { invoiceNumber } });

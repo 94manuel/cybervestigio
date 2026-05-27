@@ -160,6 +160,13 @@ export class AdminController {
     return this.adminService.getInvoices();
   }
 
+  @Get('invoices/:id')
+  @Roles(AdminRole.ADMIN, AdminRole.USER, AdminRole.SUPERVISOR)
+  @ApiOperation({ summary: 'Consultar una factura' })
+  getInvoice(@Param('id') id: string): Promise<object> {
+    return this.adminService.getInvoice(id);
+  }
+
   @Post('invoices')
   @Roles(AdminRole.ADMIN, AdminRole.USER, AdminRole.SUPERVISOR)
   @ApiOperation({ summary: 'Crear factura' })
