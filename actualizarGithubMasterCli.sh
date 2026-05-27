@@ -22,7 +22,7 @@ Uso:
   $(basename "${BASH_SOURCE[0]}") logs
 
 Descripcion:
-  Vigila cambios en la rama remota (por defecto main) y actualiza el repo local.
+  Vigila cambios en la rama remota principal y actualiza el repo local.
   Si hay cambios, despliega SOLO frontend y backend con Docker Compose.
   Este CLI bloquea despliegues sobre base de datos y n8n.
 EOF
@@ -34,6 +34,26 @@ require_command() {
     echo "Comando requerido no encontrado: ${cmd}"
     exit 1
   fi
+}
+
+detect_default_branch() {
+  local repo_path="$1"
+  local remote_head=""
+
+  remote_head="$(git -C "${repo_path}" symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null || true)"
+  if [[ -n "${remote_head}" ]]; then
+    echo "${remote_head#origin/}"
+    return 0
+  fi
+
+  local current_branch=""
+  current_branch="$(git -C "${repo_path}" rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+  if [[ -n "${current_branch}" && "${current_branch}" != "HEAD" ]]; then
+    echo "${current_branch}"
+    return 0
+  fi
+
+  echo "master"
 }
 
 load_config() {
@@ -51,7 +71,7 @@ load_config() {
     exit 1
   fi
 
-  BRANCH="${BRANCH:-main}"
+  BRANCH="${BRANCH:-$(detect_default_branch "${REPO_PATH}")}"
   AUTO_DEPLOY="${AUTO_DEPLOY:-true}"
   COMPOSE_WORKDIR="${COMPOSE_WORKDIR:-${REPO_PATH}}"
   COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.prod.yml}"
@@ -151,7 +171,7 @@ write_default_config() {
 # Ruta absoluta del repositorio local
 REPO_PATH="${repo_path}"
 
-# Rama remota a vigilar (master/main)
+# Rama remota a vigilar
 BRANCH="${branch}"
 
 # Habilita despliegue automatico cuando hay cambios
@@ -264,13 +284,16 @@ run_once() {
 
 install_cli() {
   local repo_path="${1:-$PWD}"
-  local branch="${2:-main}"
   local config_path="${CONFIG_PATH_DEFAULT}"
+
+  require_command git
 
   if [[ ! -d "${repo_path}/.git" ]]; then
     echo "La ruta indicada no contiene .git: ${repo_path}"
     exit 1
   fi
+
+  local branch="${2:-$(detect_default_branch "${repo_path}")}"
 
   write_default_config "${config_path}" "${repo_path}" "${branch}"
   write_systemd_units "${config_path}"
