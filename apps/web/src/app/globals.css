@@ -468,6 +468,9 @@ img { max-width: 100%; }
 .client-picker-option strong { color: var(--cv-azul-institucional); }
 .client-picker-option span { color: var(--cv-azul-secundario); font-size: 12px; }
 .client-picker-option.is-selected { border-color: var(--cv-azul-digital); background: #eef8fe; }
+.invoice-totals { border: var(--cv-border); border-radius: 10px; background: #f8fbff; padding: 12px; display: grid; gap: 4px; }
+.invoice-totals p { margin: 0; color: var(--cv-azul-secundario); font-size: 13px; }
+.invoice-totals p strong { color: var(--cv-azul-institucional); }
 
 @media (max-width: 1050px) {
   .header-grid { grid-template-columns: auto 1fr; }

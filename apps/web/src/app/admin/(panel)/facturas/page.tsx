@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { getAdminBillingServices, getAdminClients, getAdminInvoices, getAdminUsers } from '@/lib/api';
 import { ClientPicker } from '@/components/admin/ClientPicker';
 import { InvoiceCatalogBuilder } from '@/components/admin/InvoiceCatalogBuilder';
+import { InvoiceTotalsPreview } from '@/components/admin/InvoiceTotalsPreview';
 import { requireAdminToken } from '@/lib/session';
 import type { BillingService, InvoiceLineItem, InvoiceStatus } from '@/lib/types';
 import { createInvoiceAction, sendInvoiceAction, updateInvoiceAction } from './actions';
@@ -93,6 +94,7 @@ export default async function InvoicesAdminPage() {
           <div className="field"><label htmlFor="agreementDiscountApplied">Descuento por convenio</label><input id="agreementDiscountApplied" name="agreementDiscountApplied" type="checkbox" /></div>
           <div className="field"><label htmlFor="agreementDiscountAmount">Valor descuento convenio</label><input id="agreementDiscountAmount" name="agreementDiscountAmount" type="number" min="0" step="0.01" defaultValue={0} /></div>
           <div className="field field--full"><label htmlFor="agreementEntity">Entidad del convenio</label><input id="agreementEntity" name="agreementEntity" placeholder="Ej: Convenio Camara de Comercio" /></div>
+          <div className="field field--full"><InvoiceTotalsPreview currency="COP" /></div>
           <div className="field"><label htmlFor="status">Estado inicial</label><select id="status" name="status" defaultValue="DRAFT"><option value="DRAFT">Borrador</option><option value="SENT">Enviada</option><option value="PAID">Pagada</option><option value="OVERDUE">Vencida</option><option value="CANCELLED">Cancelada</option></select></div>
           <div className="field field--full"><label htmlFor="notes">Notas</label><textarea id="notes" name="notes" /></div>
           <div className="field--full"><button className="button button--primary" type="submit">Crear factura</button></div>
@@ -151,6 +153,7 @@ export default async function InvoicesAdminPage() {
               <div className="field"><label>Descuento convenio</label><input name="agreementDiscountAmount" type="number" min="0" step="0.01" defaultValue={Number(invoice.agreementDiscountAmount)} /></div>
               <div className="field"><label>Aplicar convenio</label><input name="agreementDiscountApplied" type="checkbox" defaultChecked={invoice.agreementDiscountApplied} /></div>
               <div className="field"><label>Entidad convenio</label><input name="agreementEntity" defaultValue={invoice.agreementEntity ?? ''} /></div>
+              <div className="field field--full"><InvoiceTotalsPreview currency={invoice.currency || 'COP'} /></div>
               <div className="field"><label>Estado</label><select name="status" defaultValue={invoice.status}><option value="DRAFT">Borrador</option><option value="SENT">Enviada</option><option value="PAID">Pagada</option><option value="OVERDUE">Vencida</option><option value="CANCELLED">Cancelada</option></select></div>
               <div className="field field--full"><label>Notas</label><textarea name="notes" defaultValue={invoice.notes ?? ''} /></div>
               <div className="field--full admin-inline-actions">

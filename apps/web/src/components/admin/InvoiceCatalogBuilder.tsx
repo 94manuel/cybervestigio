@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { BillingService, InvoiceLineItem } from '@/lib/types';
 
 type Props = {
@@ -24,6 +24,7 @@ function moneyFormat(value: number): string {
 }
 
 export function InvoiceCatalogBuilder({ fieldName, catalog, initialItems = [] }: Props) {
+  const serializedRef = useRef<HTMLTextAreaElement>(null);
   const initialMap = useMemo(() => {
     const map = new Map<string, SelectedRow>();
     for (const catalogItem of catalog) {
@@ -82,9 +83,16 @@ export function InvoiceCatalogBuilder({ fieldName, catalog, initialItems = [] }:
     }));
   }
 
+  useEffect(() => {
+    const el = serializedRef.current;
+    if (!el) return;
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  }, [serialized]);
+
   return (
     <div className="invoice-catalog">
-      <textarea name={fieldName} value={serialized} readOnly hidden />
+      <textarea name={fieldName} value={serialized} readOnly hidden ref={serializedRef} />
 
       {bySector.map(([sector, items]) => (
         <details className="invoice-sector" key={sector} open>
