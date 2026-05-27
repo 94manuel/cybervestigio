@@ -579,6 +579,33 @@ img { max-width: 100%; }
   text-transform: uppercase;
 }
 .invoice-dossier__control-grid strong { display: block; margin-top: 7px; color: var(--cv-azul-institucional); font-size: 13px; line-height: 1.45; }
+.invoice-dossier__band {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.invoice-dossier__band-item {
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(255,255,255,.92);
+  border: 1px solid rgba(0, 26, 71, .08);
+}
+.invoice-dossier__band-item span {
+  display: block;
+  color: var(--cv-plata-forense);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+.invoice-dossier__band-item strong {
+  display: block;
+  margin-top: 8px;
+  color: var(--cv-azul-institucional);
+  font-size: 14px;
+  line-height: 1.5;
+}
 .invoice-dossier__meta-grid {
   margin-top: 22px;
   display: grid;
@@ -698,6 +725,43 @@ img { max-width: 100%; }
 .invoice-timeline strong { color: var(--cv-azul-institucional); font-size: 14px; }
 .invoice-timeline span { color: var(--cv-azul-digital); font-size: 12px; font-weight: 700; }
 .invoice-timeline p { margin: 0; color: var(--cv-azul-secundario); font-size: 13px; line-height: 1.65; }
+.invoice-dossier__signatures {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.invoice-signature-card {
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(255,255,255,.94);
+  border: 1px solid rgba(0, 26, 71, .08);
+}
+.invoice-signature-card span {
+  display: block;
+  color: var(--cv-plata-forense);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+.invoice-signature-card strong {
+  display: block;
+  margin-top: 8px;
+  color: var(--cv-azul-institucional);
+  font-size: 15px;
+  line-height: 1.5;
+}
+.invoice-signature-card p {
+  margin: 8px 0 18px;
+  color: var(--cv-azul-secundario);
+  font-size: 13px;
+  line-height: 1.65;
+}
+.invoice-signature-card__line {
+  height: 1px;
+  background: rgba(0, 26, 71, .16);
+}
 .invoice-dossier__footer {
   margin-top: 18px;
   padding-top: 16px;
@@ -710,6 +774,17 @@ img { max-width: 100%; }
   font-weight: 800;
   letter-spacing: .14em;
   text-transform: uppercase;
+}
+.invoice-dossier__legal-note {
+  margin: 12px 0 0;
+  color: var(--cv-plata-forense);
+  font-size: 12px;
+  line-height: 1.7;
+}
+.invoice-dossier--document {
+  max-width: 1080px;
+  margin: 0 auto;
+  background: linear-gradient(180deg, rgba(255,255,255,1), rgba(248,251,255,.98));
 }
 .invoice-admin-layout {
   display: grid;
@@ -740,6 +815,43 @@ img { max-width: 100%; }
 .invoice-actions-card__buttons { display: grid; gap: 10px; margin-bottom: 18px; }
 .invoice-actions-card__buttons .button { width: 100%; }
 .invoice-send-card .admin-form-grid { grid-template-columns: 1fr; }
+.invoice-document-shell {
+  min-height: 100vh;
+  padding: 28px;
+  background:
+    linear-gradient(180deg, #f4f7fb 0%, #eef4f8 100%),
+    radial-gradient(circle at top right, rgba(10,146,211,.08), transparent 30%);
+}
+.invoice-document-shell__toolbar {
+  width: min(1120px, 100%);
+  margin: 0 auto 18px;
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: end;
+}
+.invoice-document-shell__toolbar h1 {
+  margin: 0 0 8px;
+  color: var(--cv-azul-institucional);
+  font-size: clamp(28px, 4vw, 38px);
+  letter-spacing: -.03em;
+}
+.invoice-document-shell__toolbar p {
+  margin: 0;
+  color: var(--cv-azul-secundario);
+  line-height: 1.7;
+}
+.invoice-document-shell__eyebrow {
+  margin: 0 0 10px;
+  color: var(--cv-azul-digital);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+.invoice-document-shell__actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: flex-end; }
+.invoice-document-shell__canvas { width: min(1120px, 100%); margin: 0 auto; }
+.no-print { }
 
 @media (max-width: 1050px) {
   .header-grid { grid-template-columns: auto 1fr; }
@@ -754,9 +866,12 @@ img { max-width: 100%; }
   .admin-sidebar { padding: 15px 20px; flex-direction: row; align-items: center; gap: 20px; }
   .admin-nav { margin: 0; display: flex; flex: 1; justify-content: center; }
   .logout-form { margin: 0; }
+  .invoice-dossier__band,
+  .invoice-dossier__signatures { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .invoice-dossier__hero,
   .invoice-dossier__brand,
-  .invoice-admin-layout { display: grid; grid-template-columns: 1fr; }
+  .invoice-admin-layout,
+  .invoice-document-shell__toolbar { display: grid; grid-template-columns: 1fr; }
   .invoice-dossier__columns { grid-template-columns: 1fr; }
   .invoice-dossier__control { min-width: 0; }
   .invoice-dossier__meta-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -784,7 +899,11 @@ img { max-width: 100%; }
   .admin-record-card__header { display: block; }
   .admin-record-card__meta { justify-items: start; margin-top: 10px; }
   .invoice-detail-heading__actions { justify-content: start; }
+  .invoice-document-shell { padding: 18px 14px; }
+  .invoice-document-shell__actions { justify-content: start; }
   .invoice-dossier { padding: 22px; border-radius: 24px; }
+  .invoice-dossier__band,
+  .invoice-dossier__signatures,
   .invoice-dossier__meta-grid,
   .invoice-dossier__columns,
   .invoice-dossier__columns--secondary,
@@ -810,6 +929,41 @@ img { max-width: 100%; }
   }
   .chat-form button {
     width: 100%;
+  }
+}
+@media print {
+  body {
+    background: #fff;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .invoice-document-shell {
+    padding: 0;
+    background: #fff;
+  }
+  .invoice-document-shell__canvas {
+    width: 100%;
+    margin: 0;
+  }
+  .invoice-dossier,
+  .invoice-dossier--document {
+    margin: 0;
+    padding: 20px;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    background: #fff;
+  }
+  .invoice-dossier::before {
+    display: none;
+  }
+  .invoice-sheet,
+  .invoice-dossier__control,
+  .invoice-dossier__band-item,
+  .invoice-signature-card {
+    box-shadow: none;
+    background: #fff;
   }
 }
 .mobile-menu { display: none; position: relative; }

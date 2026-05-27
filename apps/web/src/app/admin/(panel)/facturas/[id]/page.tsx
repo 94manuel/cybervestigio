@@ -1,47 +1,17 @@
 import type { Metadata } from 'next';
-import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getAdminBillingServices, getAdminClients, getAdminInvoice, getAdminSettings, getAdminUsers } from '@/lib/api';
+import { DocumentDataList, InvoiceDocumentDossier } from '@/components/admin/InvoiceDocumentDossier';
 import { ClientPicker } from '@/components/admin/ClientPicker';
 import { InvoiceCatalogBuilder } from '@/components/admin/InvoiceCatalogBuilder';
 import { InvoiceTotalsPreview } from '@/components/admin/InvoiceTotalsPreview';
+import { dateFormat, moneyFormat, statusLabel } from '@/lib/invoice-document';
 import { requireAdminToken } from '@/lib/session';
-import type { BillingService, InvoiceLineItem, InvoiceStatus } from '@/lib/types';
+import type { BillingService, InvoiceLineItem } from '@/lib/types';
 import { sendInvoiceAction, updateInvoiceAction } from '../actions';
 
 export const metadata: Metadata = { title: 'Detalle de factura' };
-
-const statusLabel: Record<InvoiceStatus, string> = {
-  DRAFT: 'Borrador',
-  SENT: 'Enviada',
-  PAID: 'Pagada',
-  OVERDUE: 'Vencida',
-  CANCELLED: 'Cancelada',
-};
-
-type DataRow = {
-  label: string;
-  value: string;
-};
-
-type TimelineRow = {
-  title: string;
-  value: string;
-  detail: string;
-};
-
-function dateFormat(value: string): string {
-  return new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
-}
-
-function moneyFormat(value: number | string, currency: string): string {
-  return new Intl.NumberFormat('es-CO', {
-    style: 'currency',
-    currency,
-    maximumFractionDigits: 2,
-  }).format(Number(value));
-}
 
 function toCatalogItems(items: InvoiceLineItem[], catalog: BillingService[]): InvoiceLineItem[] {
   const ids = new Set(catalog.map((item) => item.id));
@@ -56,19 +26,6 @@ function toOtherItemsText(items: InvoiceLineItem[], catalog: BillingService[]): 
     .filter((item) => (item.serviceId ? !ids.has(item.serviceId) : !names.has(item.title)))
     .map((item) => `${item.title}|${item.unitPrice}|${item.quantity}`)
     .join('\n');
-}
-
-function DocumentDataList({ items }: { items: DataRow[] }) {
-  return (
-    <dl className="invoice-data-list">
-      {items.map((item) => (
-        <div key={item.label}>
-          <dt>{item.label}</dt>
-          <dd>{item.value}</dd>
-        </div>
-      ))}
-    </dl>
-  );
 }
 
 export default async function InvoiceAdminDetailPage({
@@ -89,64 +46,8 @@ export default async function InvoiceAdminDetailPage({
 
   if (!invoice) notFound();
 
-  const issuerRows: DataRow[] = [
-    { label: 'Entidad emisora', value: settings.companyName },
-    { label: 'Correo institucional', value: settings.contactEmail },
-    { label: 'Telefono', value: settings.contactPhone?.trim() || 'No registrado' },
-    { label: 'Ubicacion', value: settings.location },
-  ];
-
-  const clientRows: DataRow[] = [
-    { label: 'Cliente', value: invoice.customerName },
-    { label: 'Correo', value: invoice.customerEmail },
-    { label: 'Telefono', value: invoice.customerPhone?.trim() || 'No registrado' },
-    { label: 'Empresa', value: invoice.company?.trim() || 'No registrada' },
-  ];
-
-  const controlRows: DataRow[] = [
-    { label: 'Proceso', value: 'Gestion de evidencia digital y facturacion' },
-    { label: 'Estado documental', value: 'Vigente' },
-    { label: 'Clasificacion', value: 'Confidencial' },
-    { label: 'Copia', value: 'Controlada' },
-  ];
-
-  const billingRows: DataRow[] = [
-    { label: 'Consecutivo', value: invoice.invoiceNumber },
-    { label: 'Estado de cobro', value: statusLabel[invoice.status] },
-    { label: 'Fecha de emision', value: dateFormat(invoice.createdAt) },
-    { label: 'Fecha de vencimiento', value: dateFormat(invoice.dueDate) },
-  ];
-
-  const amountRows: DataRow[] = [
-    { label: 'Subtotal', value: moneyFormat(invoice.subtotal, invoice.currency) },
-    { label: 'Descuento convenio', value: moneyFormat(invoice.agreementDiscountAmount, invoice.currency) },
-    { label: 'Total final', value: moneyFormat(invoice.amount, invoice.currency) },
-    { label: 'Moneda', value: invoice.currency },
-  ];
-
-  const timelineRows: TimelineRow[] = [
-    {
-      title: 'Registro de factura',
-      value: dateFormat(invoice.createdAt),
-      detail: 'Creacion inicial del documento de cobro dentro del panel administrativo.',
-    },
-    {
-      title: invoice.sentAt ? 'Envio registrado' : 'Envio pendiente',
-      value: invoice.sentAt ? dateFormat(invoice.sentAt) : 'Sin envio registrado',
-      detail: invoice.sentAt
-        ? 'La factura fue remitida al destinatario con enlace de pago.'
-        : 'Todavia no se registra envio al destinatario desde el panel.',
-    },
-    {
-      title: invoice.paidAt ? 'Pago confirmado' : 'Pago no confirmado',
-      value: invoice.paidAt ? dateFormat(invoice.paidAt) : 'Sin confirmacion de pago',
-      detail: invoice.paidAt
-        ? 'Existe marca de pago en el historial del documento.'
-        : 'La trazabilidad aun no reporta cierre por pago.',
-    },
-  ];
-
   const pdfHref = `/admin/facturas/${invoice.id}/pdf`;
+  const documentHref = `/admin/facturas/${invoice.id}/documento`;
 
   return (
     <>
@@ -161,173 +62,16 @@ export default async function InvoiceAdminDetailPage({
           <Link className="button button--outline button--small" href="/admin/facturas">
             Volver al historial
           </Link>
+          <Link className="button button--outline button--small" href={documentHref} target="_blank">
+            Ver documento
+          </Link>
           <Link className="button button--primary button--small" href={pdfHref} target="_blank">
             Descargar PDF
           </Link>
         </div>
       </header>
 
-      <section className="invoice-dossier">
-        <div className="invoice-dossier__hero">
-          <div className="invoice-dossier__brand">
-            <Image
-              src="/brand/cybervestigio-logo-cropped.png"
-              alt="CyberVestigio"
-              width={220}
-              height={78}
-              className="invoice-dossier__logo"
-              priority
-            />
-            <div className="invoice-dossier__brand-copy">
-              <p className="invoice-dossier__eyebrow">Control documental y aprobacion</p>
-              <h2 className="invoice-dossier__title">Acta ejecutiva de facturacion y relacion de cobro</h2>
-              <p className="invoice-dossier__intro">
-                La composicion de esta vista toma como referencia el tono y la estructura de los formatos institucionales
-                enviados: encabezado sobrio, bloques de control, informacion tabular y trazabilidad clara.
-              </p>
-            </div>
-          </div>
-
-          <aside className="invoice-dossier__control">
-            <p className="invoice-dossier__control-title">Ficha documental</p>
-            <div className="invoice-dossier__control-grid">
-              <div>
-                <span>Proceso</span>
-                <strong>Servicios periciales y facturacion</strong>
-              </div>
-              <div>
-                <span>Clasificacion</span>
-                <strong>Confidencial</strong>
-              </div>
-              <div>
-                <span>Estado</span>
-                <strong>{statusLabel[invoice.status]}</strong>
-              </div>
-              <div>
-                <span>Generado</span>
-                <strong>{dateFormat(invoice.createdAt)}</strong>
-              </div>
-            </div>
-          </aside>
-        </div>
-
-        <div className="invoice-dossier__meta-grid">
-          <article className="invoice-sheet">
-            <p className="invoice-sheet__eyebrow">Emisor</p>
-            <h3 className="invoice-sheet__title">Entidad responsable</h3>
-            <DocumentDataList items={issuerRows} />
-          </article>
-
-          <article className="invoice-sheet">
-            <p className="invoice-sheet__eyebrow">Cliente</p>
-            <h3 className="invoice-sheet__title">Destinatario del cobro</h3>
-            <DocumentDataList items={clientRows} />
-          </article>
-
-          <article className="invoice-sheet">
-            <p className="invoice-sheet__eyebrow">Control</p>
-            <h3 className="invoice-sheet__title">Parametros documentales</h3>
-            <DocumentDataList items={controlRows} />
-          </article>
-
-          <article className="invoice-sheet">
-            <p className="invoice-sheet__eyebrow">Factura</p>
-            <h3 className="invoice-sheet__title">Datos del documento</h3>
-            <DocumentDataList items={billingRows} />
-          </article>
-        </div>
-
-        <div className="invoice-dossier__columns">
-          <article className="invoice-sheet invoice-sheet--wide">
-            <div className="invoice-sheet__header">
-              <div>
-                <p className="invoice-sheet__eyebrow">Relacion de cobro</p>
-                <h3 className="invoice-sheet__title">Conceptos facturados</h3>
-              </div>
-              <div className="invoice-sheet__badge">{invoice.lineItems.length} concepto(s)</div>
-            </div>
-
-            <div className="table-wrap">
-              <table className="invoice-document-table">
-                <thead>
-                  <tr>
-                    <th>No.</th>
-                    <th>Concepto</th>
-                    <th>Cantidad</th>
-                    <th>Vr. unitario</th>
-                    <th>Vr. total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {invoice.lineItems.map((item, index) => (
-                    <tr key={`${item.title}-${index}`}>
-                      <td>{String(index + 1).padStart(2, '0')}</td>
-                      <td>
-                        <strong>{item.title}</strong>
-                        <span>{item.serviceId ? 'Servicio catalogado del expediente' : 'Concepto adicional registrado manualmente'}</span>
-                      </td>
-                      <td>{item.quantity}</td>
-                      <td>{moneyFormat(item.unitPrice, invoice.currency)}</td>
-                      <td>{moneyFormat(item.lineTotal, invoice.currency)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </article>
-
-          <article className="invoice-sheet">
-            <p className="invoice-sheet__eyebrow">Resumen economico</p>
-            <h3 className="invoice-sheet__title">Valores consolidados</h3>
-            <DocumentDataList items={amountRows} />
-
-            <div className="invoice-sheet__notice">
-              <strong>Convenio:</strong>{' '}
-              {invoice.agreementDiscountApplied
-                ? invoice.agreementEntity?.trim() || 'Descuento aplicado sin entidad especificada'
-                : 'No se aplico descuento por convenio.'}
-            </div>
-          </article>
-        </div>
-
-        <div className="invoice-dossier__columns invoice-dossier__columns--secondary">
-          <article className="invoice-sheet">
-            <p className="invoice-sheet__eyebrow">Alcance</p>
-            <h3 className="invoice-sheet__title">Descripcion del servicio</h3>
-            <p className="invoice-rich-copy">{invoice.description}</p>
-
-            <div className="invoice-sheet__notice">
-              <strong>Portal de pago:</strong> El enlace de pago se administra desde el canal seguro del portal y puede abrirse desde las acciones rapidas del expediente.
-            </div>
-          </article>
-
-          <article className="invoice-sheet">
-            <p className="invoice-sheet__eyebrow">Trazabilidad</p>
-            <h3 className="invoice-sheet__title">Registro cronologico</h3>
-            <ol className="invoice-timeline">
-              {timelineRows.map((item) => (
-                <li key={item.title}>
-                  <div>
-                    <strong>{item.title}</strong>
-                    <span>{item.value}</span>
-                  </div>
-                  <p>{item.detail}</p>
-                </li>
-              ))}
-            </ol>
-
-            <div className="invoice-sheet__notice invoice-sheet__notice--muted">
-              <strong>Notas internas:</strong> {invoice.notes?.trim() || 'Sin notas adicionales registradas en el expediente.'}
-            </div>
-          </article>
-        </div>
-
-        <div className="invoice-dossier__footer">
-          <span>Uso interno restringido</span>
-          <span>Documento generado para el expediente {invoice.invoiceNumber}</span>
-          <span>{settings.companyName}</span>
-        </div>
-      </section>
+      <InvoiceDocumentDossier invoice={invoice} settings={settings} />
 
       <div className="invoice-admin-layout">
         <section className="admin-card invoice-form-card">
@@ -389,6 +133,9 @@ export default async function InvoiceAdminDetailPage({
           <section className="admin-card invoice-actions-card">
             <h2>Acciones rapidas</h2>
             <div className="invoice-actions-card__buttons">
+              <Link className="button button--outline button--small" href={documentHref} target="_blank">
+                Abrir vista documento
+              </Link>
               <Link className="button button--primary button--small" href={pdfHref} target="_blank">
                 Descargar PDF
               </Link>

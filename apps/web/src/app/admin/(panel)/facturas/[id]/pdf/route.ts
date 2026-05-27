@@ -1,9 +1,8 @@
-import { readFile } from 'node:fs/promises';
-import path from 'node:path';
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFImage, type PDFPage } from 'pdf-lib';
 import { getAdminInvoice, getAdminSettings } from '@/lib/api';
+import { INVOICE_DOCUMENT_CODE, INVOICE_DOCUMENT_TITLE, INVOICE_DOCUMENT_VERSION, buildInvoiceDocumentData, dateFormat, moneyFormat, statusLabel } from '@/lib/invoice-document';
 import { requireAdminToken } from '@/lib/session';
-import type { Invoice, InvoiceStatus, SiteSettings } from '@/lib/types';
+import type { Invoice, SiteSettings } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -25,30 +24,10 @@ const palette = {
   white: rgb(1, 1, 1),
 };
 
-const statusLabel: Record<InvoiceStatus, string> = {
-  DRAFT: 'Borrador',
-  SENT: 'Enviada',
-  PAID: 'Pagada',
-  OVERDUE: 'Vencida',
-  CANCELLED: 'Cancelada',
-};
-
 type Cursor = {
   page: PDFPage;
   y: number;
 };
-
-function moneyFormat(value: number | string, currency: string): string {
-  return new Intl.NumberFormat('es-CO', {
-    style: 'currency',
-    currency,
-    maximumFractionDigits: 2,
-  }).format(Number(value));
-}
-
-function dateFormat(value: string): string {
-  return new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
-}
 
 function sanitizeFileName(value: string): string {
   return value.replace(/[^A-Za-z0-9_-]+/g, '_');
@@ -156,11 +135,10 @@ function drawCard(
   });
 }
 
-async function loadLogo(pdfDoc: PDFDocument): Promise<PDFImage | null> {
+async function loadLogo(pdfDoc: PDFDocument, logoBytes?: ArrayBuffer): Promise<PDFImage | null> {
   try {
-    const logoPath = path.join(process.cwd(), 'public', 'brand', 'cybervestigio-logo-cropped.png');
-    const bytes = await readFile(logoPath);
-    return await pdfDoc.embedPng(bytes);
+    if (!logoBytes) return null;
+    return await pdfDoc.embedPng(logoBytes);
   } catch {
     return null;
   }
@@ -170,7 +148,7 @@ function createPage(pdfDoc: PDFDocument, sansBold: PDFFont): Cursor {
   const page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
   page.drawRectangle({ x: 0, y: PAGE_HEIGHT - 12, width: PAGE_WIDTH, height: 12, color: palette.navy });
   page.drawRectangle({ x: MARGIN_X, y: BOTTOM_Y - 16, width: CONTENT_WIDTH, height: 0.8, color: palette.line });
-  page.drawText('CyberVestigio · Documento generado desde el panel administrativo', {
+  page.drawText(`CyberVestigio · ${INVOICE_DOCUMENT_CODE} · v${INVOICE_DOCUMENT_VERSION}`, {
     x: MARGIN_X,
     y: BOTTOM_Y - 30,
     size: 8,
@@ -203,13 +181,14 @@ function drawTableHeader(page: PDFPage, y: number, font: PDFFont) {
   });
 }
 
-async function buildInvoicePdf(invoice: Invoice, settings: SiteSettings): Promise<Uint8Array> {
+async function buildInvoicePdf(invoice: Invoice, settings: SiteSettings, logoBytes?: ArrayBuffer): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.create();
   const sans = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const sansBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
   const serif = await pdfDoc.embedFont(StandardFonts.TimesRoman);
   const serifBold = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
-  const logo = await loadLogo(pdfDoc);
+  const logo = await loadLogo(pdfDoc, logoBytes);
+  const documentData = buildInvoiceDocumentData(invoice, settings);
 
   let cursor = createPage(pdfDoc, sansBold);
 
@@ -228,7 +207,7 @@ async function buildInvoicePdf(invoice: Invoice, settings: SiteSettings): Promis
     color: palette.blue,
   });
 
-  cursor.page.drawText('ACTA EJECUTIVA DE FACTURA Y RELACION DE COBRO', {
+  cursor.page.drawText(INVOICE_DOCUMENT_TITLE.toUpperCase(), {
     x: MARGIN_X,
     y: cursor.y - 84,
     size: 18,
@@ -236,7 +215,7 @@ async function buildInvoicePdf(invoice: Invoice, settings: SiteSettings): Promis
     color: palette.navy,
   });
 
-  drawParagraph(cursor.page, 'Resumen formal inspirado en los formatos de control documental del expediente forense: estructura sobria, trazabilidad y datos de cobro claros.', {
+  drawParagraph(cursor.page, documentData.purpose, {
     font: serif,
     size: 10.5,
     x: MARGIN_X,
@@ -257,6 +236,8 @@ async function buildInvoicePdf(invoice: Invoice, settings: SiteSettings): Promis
   });
 
   const topRows = [
+    ['Codigo', INVOICE_DOCUMENT_CODE],
+    ['Version', `v${INVOICE_DOCUMENT_VERSION}`],
     ['Estado', statusLabel[invoice.status]],
     ['Clasificacion', 'Confidencial'],
     ['Emision', dateFormat(invoice.createdAt)],
@@ -282,42 +263,30 @@ async function buildInvoicePdf(invoice: Invoice, settings: SiteSettings): Promis
     topY -= 12;
   });
 
-  cursor.y -= 144;
+  cursor.y -= 168;
 
   const cardWidth = (CONTENT_WIDTH - 12) / 2;
   const cardHeight = 118;
   const cards = [
     {
       title: 'Entidad emisora',
-      rows: [
-        { label: 'Empresa', value: settings.companyName },
-        { label: 'Correo', value: settings.contactEmail },
-        { label: 'Ubicacion', value: settings.location },
-      ],
+      rows: documentData.issuerRows.slice(0, 3),
     },
     {
       title: 'Cliente / destinatario',
-      rows: [
-        { label: 'Cliente', value: invoice.customerName },
-        { label: 'Correo', value: invoice.customerEmail },
-        { label: 'Empresa', value: invoice.company?.trim() || 'No registrada' },
-      ],
+      rows: documentData.clientRows.slice(0, 3),
     },
     {
       title: 'Documento de cobro',
       rows: [
         { label: 'Consecutivo', value: invoice.invoiceNumber },
         { label: 'Moneda', value: invoice.currency },
-        { label: 'Estado', value: statusLabel[invoice.status] },
+        { label: 'Identificacion de copia', value: 'Controlada de uso interno' },
       ],
     },
     {
       title: 'Resumen economico',
-      rows: [
-        { label: 'Subtotal', value: moneyFormat(invoice.subtotal, invoice.currency) },
-        { label: 'Descuento', value: moneyFormat(invoice.agreementDiscountAmount, invoice.currency) },
-        { label: 'Total', value: moneyFormat(invoice.amount, invoice.currency) },
-      ],
+      rows: documentData.amountRows.slice(0, 3),
     },
   ];
 
@@ -498,14 +467,12 @@ async function buildInvoicePdf(invoice: Invoice, settings: SiteSettings): Promis
   cursor.y -= 16;
 
   const notes = [
-    invoice.notes?.trim() || 'Sin notas adicionales registradas en el expediente.',
-    invoice.agreementDiscountApplied
-      ? `Convenio aplicado: ${invoice.agreementEntity?.trim() || 'Entidad no especificada'}.`
-      : 'No se aplico descuento por convenio.',
+    documentData.notesText,
+    `Convenio: ${documentData.agreementText}.`,
     `Portal de pago asociado: ${invoice.paymentUrl}`,
   ].join(' ');
 
-  drawParagraph(cursor.page, notes, {
+  const notesHeight = drawParagraph(cursor.page, notes, {
     font: serif,
     size: 10.5,
     x: MARGIN_X,
@@ -515,11 +482,80 @@ async function buildInvoicePdf(invoice: Invoice, settings: SiteSettings): Promis
     color: palette.ink,
   });
 
+  cursor.y -= Math.max(notesHeight, 86) + 26;
+  cursor = ensureSpace(cursor, pdfDoc, sansBold, 170);
+
+  cursor.page.drawText('FIRMAS Y APROBACIONES', {
+    x: MARGIN_X,
+    y: cursor.y,
+    size: 10,
+    font: sansBold,
+    color: palette.blue,
+  });
+  cursor.y -= 16;
+
+  const signatureWidth = (CONTENT_WIDTH - 20) / 3;
+  documentData.signatoryRows.forEach((row, index) => {
+    const x = MARGIN_X + index * (signatureWidth + 10);
+    cursor.page.drawRectangle({
+      x,
+      y: cursor.y - 108,
+      width: signatureWidth,
+      height: 108,
+      color: palette.white,
+      borderColor: palette.line,
+      borderWidth: 1,
+    });
+    cursor.page.drawText(row.role.toUpperCase(), {
+      x: x + 14,
+      y: cursor.y - 18,
+      size: 8,
+      font: sansBold,
+      color: palette.blue,
+    });
+    cursor.page.drawText(row.signer, {
+      x: x + 14,
+      y: cursor.y - 38,
+      size: 9.5,
+      font: sansBold,
+      color: palette.navy,
+      maxWidth: signatureWidth - 28,
+    });
+    drawParagraph(cursor.page, row.note, {
+      font: sans,
+      size: 8.5,
+      x: x + 14,
+      y: cursor.y - 56,
+      width: signatureWidth - 28,
+      lineHeight: 10,
+      color: palette.ink,
+    });
+    cursor.page.drawRectangle({
+      x: x + 14,
+      y: cursor.y - 92,
+      width: signatureWidth - 28,
+      height: 1,
+      color: palette.line,
+    });
+  });
+
+  cursor.y -= 126;
+  cursor = ensureSpace(cursor, pdfDoc, sansBold, 60);
+  drawParagraph(cursor.page, documentData.legalNotice, {
+    font: sans,
+    size: 8.5,
+    x: MARGIN_X,
+    y: cursor.y,
+    width: CONTENT_WIDTH,
+    lineHeight: 10,
+    color: palette.muted,
+  });
+
   return pdfDoc.save();
 }
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const token = await requireAdminToken();
@@ -530,10 +566,21 @@ export async function GET(
     return new Response('Factura no encontrada.', { status: 404 });
   }
 
-  const pdf = await buildInvoicePdf(invoice, settings);
-  const fileName = `Factura_${sanitizeFileName(invoice.invoiceNumber)}.pdf`;
+  let logoBytes: ArrayBuffer | undefined;
+  try {
+    const logoResponse = await fetch(new URL('/brand/cybervestigio-logo-cropped.png', request.url), { cache: 'force-cache' });
+    if (logoResponse.ok) {
+      logoBytes = await logoResponse.arrayBuffer();
+    }
+  } catch {
+    logoBytes = undefined;
+  }
 
-  return new Response(pdf, {
+  const pdf = await buildInvoicePdf(invoice, settings, logoBytes);
+  const fileName = `Factura_${sanitizeFileName(invoice.invoiceNumber)}.pdf`;
+  const body = pdf.buffer.slice(pdf.byteOffset, pdf.byteOffset + pdf.byteLength) as ArrayBuffer;
+
+  return new Response(body, {
     headers: {
       'Content-Type': 'application/pdf',
       'Content-Disposition': `attachment; filename="${fileName}"`,
