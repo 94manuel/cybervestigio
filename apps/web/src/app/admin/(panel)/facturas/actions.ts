@@ -53,11 +53,12 @@ function invoicePayload(formData: FormData) {
 
 export async function createInvoiceAction(formData: FormData): Promise<void> {
   const token = await requireAdminToken();
-  await adminRequest('/admin/invoices', token, {
+  const invoice = await adminRequest<{ id: string }>('/admin/invoices', token, {
     method: 'POST',
     body: JSON.stringify(invoicePayload(formData)),
   });
   revalidatePath('/admin/facturas');
+  revalidatePath(`/admin/facturas/${invoice.id}`);
 }
 
 export async function updateInvoiceAction(formData: FormData): Promise<void> {
@@ -68,6 +69,7 @@ export async function updateInvoiceAction(formData: FormData): Promise<void> {
     body: JSON.stringify(invoicePayload(formData)),
   });
   revalidatePath('/admin/facturas');
+  revalidatePath(`/admin/facturas/${id}`);
 }
 
 export async function sendInvoiceAction(formData: FormData): Promise<void> {
@@ -85,4 +87,5 @@ export async function sendInvoiceAction(formData: FormData): Promise<void> {
     }),
   });
   revalidatePath('/admin/facturas');
+  revalidatePath(`/admin/facturas/${id}`);
 }
