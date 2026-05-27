@@ -163,9 +163,6 @@ export class AdminService {
     if ('currency' in dto) {
       data.currency = dto.currency?.trim().toUpperCase() || 'COP';
     }
-    if ('paymentUrl' in dto && dto.paymentUrl !== undefined) {
-      data.paymentUrl = dto.paymentUrl.trim();
-    }
     if ('dueDate' in dto && dto.dueDate !== undefined) {
       data.dueDate = new Date(dto.dueDate);
     }
@@ -226,6 +223,11 @@ export class AdminService {
   private getInvoicePortalUrl(invoiceNumber: string): string {
     const frontendUrl = this.configService.get<string>('FRONTEND_URL')?.trim() || 'http://localhost:3000';
     return `${frontendUrl.replace(/\/$/, '')}/facturas/${encodeURIComponent(invoiceNumber)}`;
+  }
+
+  private getInvoicePaymentUrl(invoiceNumber: string): string {
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL')?.trim() || 'http://localhost:3000';
+    return `${frontendUrl.replace(/\/$/, '')}/facturas/${encodeURIComponent(invoiceNumber)}/pagar`;
   }
 
   async getDashboard(): Promise<object> {
@@ -480,6 +482,7 @@ export class AdminService {
     return this.prisma.invoice.create({
       data: {
         ...(this.normalizeInvoiceData({ ...dto, invoiceNumber }) as Prisma.InvoiceUncheckedCreateInput),
+        paymentUrl: this.getInvoicePaymentUrl(invoiceNumber),
         lineItems: normalizedItems as Prisma.InputJsonValue,
         subtotal: new Prisma.Decimal(financials.subtotal),
         agreementDiscountAmount: new Prisma.Decimal(financials.discountAmount),
@@ -514,6 +517,8 @@ export class AdminService {
       ? this.normalizeLineItems(dto.lineItems)
       : ((current.lineItems as unknown as NormalizedInvoiceLineItem[]) ?? []);
 
+    const finalInvoiceNumber = nextNumber ?? current.invoiceNumber;
+
     const agreementDiscountApplied = dto.agreementDiscountApplied ?? current.agreementDiscountApplied;
     const agreementDiscountAmount =
       dto.agreementDiscountAmount !== undefined
@@ -525,6 +530,7 @@ export class AdminService {
       where: { id },
       data: {
         ...(this.normalizeInvoiceData(dto) as Prisma.InvoiceUncheckedUpdateInput),
+        paymentUrl: this.getInvoicePaymentUrl(finalInvoiceNumber),
         lineItems: lineItems as Prisma.InputJsonValue,
         subtotal: new Prisma.Decimal(financials.subtotal),
         agreementDiscountApplied,

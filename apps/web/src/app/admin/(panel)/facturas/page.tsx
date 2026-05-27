@@ -90,7 +90,7 @@ export default async function InvoicesAdminPage() {
             <textarea id="otherItems" name="otherItems" placeholder="Gastos notariales|180000|1" />
             <small className="admin-muted">Si agrega otros, indique cual es y su precio.</small>
           </div>
-          <div className="field field--full"><label htmlFor="paymentUrl">Link de pago</label><input id="paymentUrl" name="paymentUrl" type="url" placeholder="https://pagos.tu-dominio.com/fac-2026-0001" required /></div>
+          <div className="field field--full"><small className="admin-muted">El link de pago se genera automaticamente al crear la factura.</small></div>
           <div className="field"><label htmlFor="agreementDiscountApplied">Descuento por convenio</label><input id="agreementDiscountApplied" name="agreementDiscountApplied" type="checkbox" /></div>
           <div className="field"><label htmlFor="agreementDiscountAmount">Valor descuento convenio</label><input id="agreementDiscountAmount" name="agreementDiscountAmount" type="number" min="0" step="0.01" defaultValue={0} /></div>
           <div className="field field--full"><label htmlFor="agreementEntity">Entidad del convenio</label><input id="agreementEntity" name="agreementEntity" placeholder="Ej: Convenio Camara de Comercio" /></div>
@@ -148,7 +148,7 @@ export default async function InvoicesAdminPage() {
                 <label>Otros cobros</label>
                 <textarea name="otherItems" defaultValue={toOtherItemsText(invoice.lineItems, billingServices)} placeholder="Informe adicional|250000|1" />
               </div>
-              <div className="field field--full"><label>Link de pago</label><input name="paymentUrl" type="url" defaultValue={invoice.paymentUrl} required /></div>
+              <div className="field field--full"><small className="admin-muted">Link de pago auto-generado: {invoice.paymentUrl}</small></div>
               <div className="field"><label>Subtotal</label><input value={moneyFormat(invoice.subtotal, invoice.currency)} readOnly /></div>
               <div className="field"><label>Descuento convenio</label><input name="agreementDiscountAmount" type="number" min="0" step="0.01" defaultValue={Number(invoice.agreementDiscountAmount)} /></div>
               <div className="field"><label>Aplicar convenio</label><input name="agreementDiscountApplied" type="checkbox" defaultChecked={invoice.agreementDiscountApplied} /></div>

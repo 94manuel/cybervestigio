@@ -42,7 +42,6 @@ function invoicePayload(formData: FormData) {
     lineItems,
     amount,
     currency: String(formData.get('currency') ?? 'COP'),
-    paymentUrl: String(formData.get('paymentUrl') ?? ''),
     dueDate: String(formData.get('dueDate') ?? ''),
     status: String(formData.get('status') ?? 'DRAFT'),
     notes: String(formData.get('notes') ?? ''),

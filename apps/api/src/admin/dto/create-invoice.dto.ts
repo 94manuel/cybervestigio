@@ -10,7 +10,6 @@ import {
   IsNumber,
   IsOptional,
   IsString,
-  IsUrl,
   IsUUID,
   MaxLength,
   Min,
@@ -78,11 +77,6 @@ export class CreateInvoiceDto {
   @IsString()
   @MaxLength(8)
   currency?: string;
-
-  @ApiProperty({ example: 'https://pagos.cybervestigio.co/fac-2026-0001' })
-  @IsUrl({ require_tld: false })
-  @MaxLength(500)
-  paymentUrl!: string;
 
   @ApiProperty({ example: '2026-06-30T23:59:59.000Z' })
   @IsDateString()
