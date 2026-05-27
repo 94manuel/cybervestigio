@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { hash } from 'bcryptjs';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../src/generated/prisma/client';
+import { BILLING_SERVICES_CATALOG } from './billing-services.catalog';
 
 const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL ?? '',
@@ -75,6 +76,43 @@ async function main(): Promise<void> {
       where: { slug: service.slug },
       update: service,
       create: service,
+    });
+  }
+
+  // Seed configurable billing services used by the factura module.
+  for (const [index, item] of BILLING_SERVICES_CATALOG.entries()) {
+    const existing = await prisma.billingService.findFirst({
+      where: {
+        sector: item.sector,
+        service: item.service,
+      },
+      select: { id: true },
+    });
+
+    if (existing) {
+      await prisma.billingService.update({
+        where: { id: existing.id },
+        data: {
+          scope: item.scope,
+          recommendedPrice: item.recommendedPrice,
+          priceNote: item.priceNote ?? null,
+          active: true,
+          sortOrder: index + 1,
+        },
+      });
+      continue;
+    }
+
+    await prisma.billingService.create({
+      data: {
+        sector: item.sector,
+        service: item.service,
+        scope: item.scope,
+        recommendedPrice: item.recommendedPrice,
+        priceNote: item.priceNote ?? null,
+        active: true,
+        sortOrder: index + 1,
+      },
     });
   }
 }
