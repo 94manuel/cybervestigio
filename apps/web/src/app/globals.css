@@ -423,6 +423,11 @@ img { max-width: 100%; }
 .tag--IN_REVIEW { color: #8b5b08; background: #fff2d6; }
 .tag--ATTENDED { color: #16683d; background: #e7f7ec; }
 .tag--ARCHIVED { color: #5e6673; background: #ebedf1; }
+.tag--invoice-DRAFT { color: #5e6673; background: #ebedf1; }
+.tag--invoice-SENT { color: #075b81; background: #dff3fb; }
+.tag--invoice-PAID { color: #16683d; background: #e7f7ec; }
+.tag--invoice-OVERDUE { color: #9d2531; background: #fde9eb; }
+.tag--invoice-CANCELLED { color: #6d4d0f; background: #fff1d6; }
 .inline-form { display: flex; align-items: center; gap: 8px; }
 .inline-form select { padding: 8px; border: 1px solid var(--cv-gris-claro); border-radius: 8px; font-size: 13px; }
 .admin-form-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 17px; }
@@ -433,6 +438,36 @@ img { max-width: 100%; }
 .admin-service-card p { margin: 0 0 8px; color: var(--cv-azul-secundario); font-size: 14px; line-height: 1.6; }
 .actions-column { display: flex; gap: 8px; align-items: flex-start; }
 .danger { color: #9d2531; border-color: #f0b8be; background: #fff; }
+.admin-record-card { padding: 20px 0; border-bottom: var(--cv-border); }
+.admin-record-card:first-of-type { padding-top: 0; }
+.admin-record-card:last-child { padding-bottom: 0; border-bottom: 0; }
+.admin-record-card__header { display: flex; justify-content: space-between; gap: 20px; align-items: flex-start; margin-bottom: 18px; }
+.admin-record-card__header h3 { margin: 0 0 6px; color: var(--cv-azul-institucional); }
+.admin-record-card__header p { margin: 0; color: var(--cv-azul-secundario); }
+.admin-record-card__meta { display: grid; justify-items: end; gap: 8px; }
+.admin-record-card__meta strong { color: var(--cv-azul-institucional); }
+.admin-inline-actions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.admin-send-form { margin-top: 16px; padding: 18px; border-radius: 14px; background: var(--cv-fondo-control); }
+.admin-muted { color: var(--cv-plata-forense); font-size: 13px; line-height: 1.5; }
+.invoice-catalog { display: grid; gap: 12px; }
+.invoice-sector { border: var(--cv-border); border-radius: 12px; background: #fff; }
+.invoice-sector > summary { cursor: pointer; padding: 12px 14px; font-weight: 700; color: var(--cv-azul-institucional); }
+.invoice-sector-grid { display: grid; gap: 10px; padding: 0 12px 12px; }
+.invoice-catalog-row { border: var(--cv-border); border-radius: 10px; padding: 10px; display: grid; gap: 8px; background: var(--cv-fondo-control); }
+.invoice-catalog-select { display: flex; gap: 8px; align-items: center; color: var(--cv-azul-institucional); }
+.invoice-catalog-row p { margin: 0; color: var(--cv-azul-secundario); font-size: 13px; }
+.invoice-catalog-controls { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+.invoice-catalog-controls label { display: grid; gap: 5px; color: var(--cv-azul-institucional); font-size: 12px; font-weight: 700; }
+.invoice-catalog-controls input { padding: 8px; border: 1px solid var(--cv-gris-claro); border-radius: 8px; }
+.invoice-catalog-meta { display: flex; justify-content: space-between; align-items: center; color: var(--cv-plata-forense); font-size: 12px; }
+.invoice-catalog-meta strong { color: var(--cv-azul-institucional); }
+.client-picker { display: grid; gap: 8px; }
+.client-picker > input { padding: 10px; border: 1px solid var(--cv-gris-claro); border-radius: 8px; }
+.client-picker-results { display: grid; gap: 6px; max-height: 220px; overflow: auto; border: var(--cv-border); border-radius: 10px; padding: 8px; background: #fff; }
+.client-picker-option { text-align: left; border: var(--cv-border); border-radius: 8px; background: #fff; padding: 8px; display: grid; gap: 2px; cursor: pointer; }
+.client-picker-option strong { color: var(--cv-azul-institucional); }
+.client-picker-option span { color: var(--cv-azul-secundario); font-size: 12px; }
+.client-picker-option.is-selected { border-color: var(--cv-azul-digital); background: #eef8fe; }
 
 @media (max-width: 1050px) {
   .header-grid { grid-template-columns: auto 1fr; }
@@ -457,6 +492,7 @@ img { max-width: 100%; }
   .hero-actions { flex-direction: column; }
   .services, .method, .principles, .cta, .content-section { padding: 56px 0; }
   .services-grid, .full-services-grid, .steps-grid, .principles-grid, .footer-grid, .form-grid, .metrics-grid, .admin-form-grid { grid-template-columns: 1fr; }
+  .invoice-catalog-controls { grid-template-columns: 1fr; }
   .cta-box { display: block; padding: 29px; }
   .cta-box .button { margin-top: 25px; }
   .process-row { grid-template-columns: 1fr; gap: 10px; }
@@ -466,6 +502,8 @@ img { max-width: 100%; }
   .logout-form { margin-top: 14px; }
   .admin-main { padding: 22px 15px; }
   .admin-service-card { grid-template-columns: 1fr; }
+  .admin-record-card__header { display: block; }
+  .admin-record-card__meta { justify-items: start; margin-top: 10px; }
   .chat-widget {
     right: 16px;
     bottom: 16px;

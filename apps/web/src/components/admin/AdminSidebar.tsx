@@ -9,6 +9,9 @@ export function AdminSidebar() {
       <nav className="admin-nav" aria-label="Administración">
         <Link href="/admin">Dashboard</Link>
         <Link href="/admin/usuarios">Usuarios</Link>
+        <Link href="/admin/clientes">Clientes</Link>
+        <Link href="/admin/facturas">Facturas</Link>
+        <Link href="/admin/cobros">Cobros</Link>
         <Link href="/admin/contactos">Contactos</Link>
         <Link href="/admin/servicios">Servicios</Link>
         <Link href="/admin/configuracion">Configuración</Link>

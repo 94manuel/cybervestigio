@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 const defaultSettings = {
@@ -50,5 +50,39 @@ export class SiteService {
       where: { active: true },
       orderBy: { sortOrder: 'asc' },
     });
+  }
+
+  async getPublicInvoice(invoiceNumber: string): Promise<object> {
+    const normalized = invoiceNumber.trim().toUpperCase();
+    const invoice = await this.prisma.invoice.findUnique({
+      where: { invoiceNumber: normalized },
+      select: {
+        invoiceNumber: true,
+        customerName: true,
+        description: true,
+        lineItems: true,
+        amount: true,
+        currency: true,
+        dueDate: true,
+        status: true,
+        paymentUrl: true,
+      },
+    });
+
+    if (!invoice) {
+      throw new NotFoundException('Factura no encontrada.');
+    }
+
+    return {
+      invoiceNumber: invoice.invoiceNumber,
+      customerName: invoice.customerName,
+      description: invoice.description,
+      lineItems: invoice.lineItems,
+      amount: Number(invoice.amount),
+      currency: invoice.currency,
+      dueDate: invoice.dueDate,
+      status: invoice.status,
+      paymentUrl: invoice.paymentUrl,
+    };
   }
 }

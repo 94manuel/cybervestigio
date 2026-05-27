@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { AdminAccount, DashboardData, HomeData, Service, SiteSettings, ContactRequest } from './types';
+import { AdminAccount, BillingService, Client, ContactRequest, DashboardData, HomeData, Invoice, PublicInvoice, Service, SiteSettings } from './types';
 
 const apiUrl = process.env.API_INTERNAL_URL ?? 'http://localhost:4000/api/v1';
 
@@ -60,6 +60,9 @@ export async function getServices(): Promise<Service[]> {
   }
 }
 
+export const getPublicInvoice = (invoiceNumber: string): Promise<PublicInvoice> =>
+  publicRequest(`/site/invoices/${encodeURIComponent(invoiceNumber)}`);
+
 export async function adminRequest<T>(path: string, token: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${apiUrl}${path}`, {
     ...init,
@@ -80,4 +83,8 @@ export const getAdminContacts = (token: string): Promise<ContactRequest[]> => ad
 export const getAdminServices = (token: string): Promise<Service[]> => adminRequest('/admin/services', token);
 export const getAdminSettings = (token: string): Promise<SiteSettings> => adminRequest('/admin/settings', token);
 export const getAdminUsers = (token: string): Promise<AdminAccount[]> => adminRequest('/admin/users', token);
+export const getAdminClients = (token: string, search?: string): Promise<Client[]> =>
+  adminRequest(`/admin/clients${search ? `?search=${encodeURIComponent(search)}` : ''}`, token);
+export const getAdminBillingServices = (token: string): Promise<BillingService[]> => adminRequest('/admin/billing-services', token);
+export const getAdminInvoices = (token: string): Promise<Invoice[]> => adminRequest('/admin/invoices', token);
 export const getApiUrl = (): string => apiUrl;

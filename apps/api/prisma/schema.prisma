@@ -22,6 +22,14 @@ enum ContactStatus {
   ARCHIVED
 }
 
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
 model AdminUser {
   id           String    @id @default(uuid())
   name         String
@@ -70,4 +78,67 @@ model SiteSetting {
   contactPhone    String?
   location        String
   updatedAt       DateTime @updatedAt
+}
+
+model Invoice {
+  id            String        @id @default(uuid())
+  invoiceNumber String        @unique
+  customerClientId String?
+  customerName  String
+  customerEmail String
+  customerPhone String?
+  company       String?
+  description   String
+  lineItems     Json          @default("[]")
+  subtotal      Decimal       @default(0) @db.Decimal(12, 2)
+  agreementDiscountApplied Boolean @default(false)
+  agreementEntity String?
+  agreementDiscountAmount Decimal @default(0) @db.Decimal(12, 2)
+  amount        Decimal       @db.Decimal(12, 2)
+  currency      String        @default("COP")
+  paymentUrl    String
+  dueDate       DateTime
+  status        InvoiceStatus @default(DRAFT)
+  notes         String?
+  sentAt        DateTime?
+  paidAt        DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  customerClient Client?      @relation(fields: [customerClientId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([dueDate])
+  @@index([createdAt])
+  @@index([customerClientId])
+}
+
+model Client {
+  id        String   @id @default(uuid())
+  fullName  String
+  cedula    String   @unique
+  email     String
+  phone     String?
+  company   String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  invoices  Invoice[]
+
+  @@index([fullName])
+}
+
+model BillingService {
+  id               String   @id @default(uuid())
+  sector           String
+  service          String
+  scope            String
+  recommendedPrice Decimal  @db.Decimal(12, 2)
+  priceNote        String?
+  active           Boolean  @default(true)
+  sortOrder        Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([sector])
+  @@index([active])
 }

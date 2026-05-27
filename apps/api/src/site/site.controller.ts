@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Param } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { SiteService } from './site.service';
 
@@ -17,5 +17,11 @@ export class SiteController {
   @ApiOperation({ summary: 'Listar servicios públicos activos' })
   getServices(): Promise<object[]> {
     return this.siteService.getServices();
+  }
+
+  @Get('invoices/:invoiceNumber')
+  @ApiOperation({ summary: 'Consultar factura pública para pago' })
+  getPublicInvoice(@Param('invoiceNumber') invoiceNumber: string): Promise<object> {
+    return this.siteService.getPublicInvoice(invoiceNumber);
   }
 }
