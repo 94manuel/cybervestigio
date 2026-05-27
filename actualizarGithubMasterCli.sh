@@ -55,8 +55,17 @@ load_config() {
   AUTO_DEPLOY="${AUTO_DEPLOY:-true}"
   COMPOSE_WORKDIR="${COMPOSE_WORKDIR:-${REPO_PATH}}"
   COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.prod.yml}"
+  COMPOSE_ENV_FILE="${COMPOSE_ENV_FILE:-}"
   FRONT_SERVICE="${FRONT_SERVICE:-web}"
   BACK_SERVICE="${BACK_SERVICE:-api}"
+}
+
+run_compose() {
+  if [[ -n "${COMPOSE_ENV_FILE}" ]]; then
+    docker compose --env-file "${COMPOSE_ENV_FILE}" -f "${COMPOSE_FILE}" "$@"
+  else
+    docker compose -f "${COMPOSE_FILE}" "$@"
+  fi
 }
 
 validate_allowed_project_service() {
@@ -76,7 +85,7 @@ validate_allowed_project_service() {
 
 validate_service_exists_in_compose() {
   local service_name="$1"
-  if ! docker compose -f "${COMPOSE_FILE}" config --services | grep -qx "${service_name}"; then
+  if ! run_compose config --services | grep -qx "${service_name}"; then
     echo "El servicio ${service_name} no existe en ${COMPOSE_FILE}"
     exit 1
   fi
@@ -116,9 +125,18 @@ deploy_front_back() {
 
   (
     cd "${COMPOSE_WORKDIR}"
+
+    if [[ -n "${COMPOSE_ENV_FILE}" && ! -f "${COMPOSE_ENV_FILE}" ]]; then
+      echo "COMPOSE_ENV_FILE no existe en ${COMPOSE_WORKDIR}: ${COMPOSE_ENV_FILE}"
+      exit 1
+    fi
+
     validate_service_exists_in_compose "${FRONT_SERVICE}"
     validate_service_exists_in_compose "${BACK_SERVICE}"
-    docker compose -f "${COMPOSE_FILE}" up -d --build --no-deps "${FRONT_SERVICE}" "${BACK_SERVICE}"
+
+    # Equivalente a down/up pero limitado a web y api para no tocar servicios protegidos.
+    run_compose rm -sf "${FRONT_SERVICE}" "${BACK_SERVICE}" || true
+    run_compose up -d --build --no-deps "${FRONT_SERVICE}" "${BACK_SERVICE}"
   )
 }
 
@@ -144,6 +162,9 @@ COMPOSE_WORKDIR="${repo_path}"
 
 # Archivo compose
 COMPOSE_FILE="docker-compose.prod.yml"
+
+# Archivo de variables de entorno para docker compose (opcional)
+COMPOSE_ENV_FILE=".env.prod"
 
 # SOLO servicios permitidos para despliegue
 FRONT_SERVICE="web"
