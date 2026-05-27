@@ -23,6 +23,10 @@ function moneyFormat(value: number): string {
   }).format(value || 0);
 }
 
+function displaySectorName(sector: string): string {
+  return sector.replace(/^\d+(?:\.\d+)*\s*/, '');
+}
+
 export function InvoiceCatalogBuilder({ fieldName, catalog, initialItems = [] }: Props) {
   const serializedRef = useRef<HTMLTextAreaElement>(null);
   const initialMap = useMemo(() => {
@@ -95,8 +99,8 @@ export function InvoiceCatalogBuilder({ fieldName, catalog, initialItems = [] }:
       <textarea name={fieldName} value={serialized} readOnly hidden ref={serializedRef} />
 
       {bySector.map(([sector, items]) => (
-        <details className="invoice-sector" key={sector} open>
-          <summary>{sector}</summary>
+        <details className="invoice-sector" key={sector}>
+          <summary>{displaySectorName(sector)}</summary>
           <div className="invoice-sector-grid">
             {items.map((item) => {
               const row = rows[item.id];
