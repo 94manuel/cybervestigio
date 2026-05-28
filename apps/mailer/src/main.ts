@@ -108,7 +108,14 @@ async function bootstrap(): Promise<void> {
     auth: config.smtp.user && config.smtp.pass ? { user: config.smtp.user, pass: config.smtp.pass } : undefined,
   });
 
-  await transporter.verify();
+  try {
+    await transporter.verify();
+    console.info('[mailer] Conexion SMTP verificada correctamente.');
+  } catch (error) {
+    console.warn(
+      `[mailer] No fue posible verificar SMTP al iniciar: ${(error as Error).message}. El worker seguira activo, pero los envios fallaran hasta corregir SMTP_*.`,
+    );
+  }
 
   const worker = new Worker<MailQueueMessage>(
     config.queueName,

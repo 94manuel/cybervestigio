@@ -25,8 +25,6 @@ services:
     image: redis:7-alpine
     container_name: cybervestigio-redis
     restart: unless-stopped
-    ports:
-      - "6379:6379"
     volumes:
       - cybervestigio_redis_data:/data
     healthcheck:
@@ -104,7 +102,7 @@ services:
       SMTP_HOST: ${SMTP_HOST:-smtp.hostinger.com}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_SECURE: ${SMTP_SECURE:-false}
-      SMTP_USER: ${SMTP_USER:-contacto@cybervestigio.com}
+      SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
       SMTP_FROM: ${SMTP_FROM:-contacto@cybervestigio.com}
     command: >
