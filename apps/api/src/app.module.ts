@@ -5,6 +5,7 @@ import { AdminModule } from './admin/admin.module';
 import { AuthModule } from './auth/auth.module';
 import { ContactsModule } from './contacts/contacts.module';
 import { HealthModule } from './health/health.module';
+import { MailModule } from './mail/mail.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { SiteModule } from './site/site.module';
 
@@ -26,6 +27,7 @@ import { SiteModule } from './site/site.module';
         SMTP_FROM: Joi.string().email().allow('').optional(),
       }),
     }),
+    MailModule,
     PrismaModule,
     AuthModule,
     SiteModule,

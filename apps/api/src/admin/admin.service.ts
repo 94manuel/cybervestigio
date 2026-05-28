@@ -1,9 +1,9 @@
-import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { hash } from 'bcryptjs';
-import nodemailer from 'nodemailer';
 import * as XLSX from 'xlsx';
 import { ContactStatus, InvoiceStatus, Prisma } from '../generated/prisma/client';
+import { MailService } from '../mail/mail.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateAdminUserDto } from './dto/create-admin-user.dto';
 import { CreateBillingServiceDto } from './dto/create-billing-service.dto';
@@ -37,6 +37,7 @@ export class AdminService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
+    private readonly mailService: MailService,
   ) {}
 
   private readonly userSelection = {
@@ -197,27 +198,6 @@ export class AdminService {
     }
 
     return invoice;
-  }
-
-  private getSmtpConfig() {
-    const host = this.configService.get<string>('SMTP_HOST')?.trim();
-    const user = this.configService.get<string>('SMTP_USER')?.trim();
-    const pass = this.configService.get<string>('SMTP_PASS')?.trim();
-    const from = this.configService.get<string>('SMTP_FROM')?.trim();
-    const port = this.configService.get<number>('SMTP_PORT') ?? 587;
-    const secure = this.configService.get<boolean>('SMTP_SECURE') ?? false;
-
-    if (!host || !from) {
-      throw new BadRequestException('SMTP_HOST y SMTP_FROM son obligatorios para enviar facturas por correo.');
-    }
-
-    return {
-      host,
-      port,
-      secure,
-      auth: user && pass ? { user, pass } : undefined,
-      from,
-    };
   }
 
   private getInvoicePortalUrl(invoiceNumber: string): string {
@@ -547,13 +527,6 @@ export class AdminService {
 
   async sendInvoice(id: string, dto: SendInvoiceDto): Promise<object> {
     const invoice = await this.getInvoiceOrThrow(id);
-    const smtp = this.getSmtpConfig();
-    const transporter = nodemailer.createTransport({
-      host: smtp.host,
-      port: smtp.port,
-      secure: smtp.secure,
-      auth: smtp.auth,
-    });
 
     let recipient = '';
     if (dto.recipientClientId) {
@@ -605,9 +578,8 @@ export class AdminService {
       )
       .join('');
 
-    try {
-      await transporter.sendMail({
-        from: smtp.from,
+    await this.mailService.send(
+      {
         to: recipient,
         subject: `Factura ${invoice.invoiceNumber} - CyberVestigio`,
         text: [
@@ -636,10 +608,9 @@ export class AdminService {
           <p><a href="${invoice.paymentUrl}" style="display:inline-block;padding:10px 16px;background:#0f4c81;color:#fff;border-radius:6px;text-decoration:none;">Pagar ahora</a></p>
           <p>${dto.message?.trim() || 'Puede realizar el pago desde el enlace anterior.'}</p>
         `,
-      });
-    } catch (error) {
-      throw new InternalServerErrorException(`No fue posible enviar el correo de la factura. ${(error as Error).message}`);
-    }
+      },
+      'correo de la factura',
+    );
 
     return this.prisma.invoice.update({
       where: { id },

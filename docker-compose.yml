@@ -57,6 +57,12 @@ services:
       ADMIN_INITIAL_NAME: Administrador CyberVestigio
       ADMIN_INITIAL_EMAIL: admin@cybervestigio.co
       ADMIN_INITIAL_PASSWORD: Cambiar-Esta-Clave-123!
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
     command: >
       sh -c "npm run prisma:generate
       && npm run prisma:deploy

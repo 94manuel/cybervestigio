@@ -73,9 +73,26 @@ Copy-Item apps/api/.env.example apps/api/.env
 Copy-Item apps/web/.env.example apps/web/.env.local
 ```
 
-Antes de producción, cambie obligatoriamente `JWT_SECRET`, `ADMIN_INITIAL_PASSWORD` y las credenciales de la base de datos.
+Antes de producción, cambie obligatoriamente `JWT_SECRET`, `ADMIN_INITIAL_PASSWORD`, las credenciales de la base de datos y la clave SMTP real de la cuenta de correo.
 
-### 3.1. Configurar el chat con n8n
+### 3.1. Configurar correo saliente
+
+La API envia correos por SMTP. Para la cuenta `contacto@cybervestigio.com`, configure en `apps/api/.env`:
+
+```env
+SMTP_HOST=smtp.hostinger.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=contacto@cybervestigio.com
+SMTP_PASS=coloque-aqui-la-clave-real
+SMTP_FROM=contacto@cybervestigio.com
+```
+
+El dato IMAP (`imap.hostinger.com`) sirve para clientes de correo, no para los envios salientes de la API.
+
+Si ejecuta la plataforma con `docker compose`, copie las mismas variables SMTP en el `.env` raiz o en `.env.prod` para que lleguen al contenedor `api`.
+
+### 3.2. Configurar el chat con n8n
 
 En `apps/web/.env.local` configure el webhook del flujo conversacional:
 
@@ -147,6 +164,8 @@ Los valores se configuran en `apps/api/.env`:
 ADMIN_INITIAL_EMAIL=admin@cybervestigio.co
 ADMIN_INITIAL_PASSWORD=Cambiar-Esta-Clave-123!
 ```
+
+Los envios de facturas y cualquier otro correo del backend usan la configuracion SMTP centralizada del API.
 
 ## Páginas implementadas
 
