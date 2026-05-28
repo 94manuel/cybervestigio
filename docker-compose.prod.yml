@@ -73,8 +73,8 @@ services:
       ADMIN_INITIAL_NAME: ${ADMIN_INITIAL_NAME}
       ADMIN_INITIAL_EMAIL: ${ADMIN_INITIAL_EMAIL}
       ADMIN_INITIAL_PASSWORD: ${ADMIN_INITIAL_PASSWORD}
-      REDIS_URL: ${REDIS_URL}
-      MAIL_QUEUE_NAME: ${MAIL_QUEUE_NAME}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      MAIL_QUEUE_NAME: ${MAIL_QUEUE_NAME:-cybervestigio-mail}
     expose:
       - "4000"
     healthcheck:
@@ -98,8 +98,8 @@ services:
         condition: service_healthy
     environment:
       NODE_ENV: production
-      REDIS_URL: ${REDIS_URL}
-      MAIL_QUEUE_NAME: ${MAIL_QUEUE_NAME}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      MAIL_QUEUE_NAME: ${MAIL_QUEUE_NAME:-cybervestigio-mail}
       SMTP_HOST: ${SMTP_HOST}
       SMTP_PORT: ${SMTP_PORT}
       SMTP_SECURE: ${SMTP_SECURE}

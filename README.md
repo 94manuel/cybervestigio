@@ -105,6 +105,8 @@ El dato IMAP (`imap.hostinger.com`) sirve para clientes de correo, no para los e
 
 Si ejecuta la plataforma con `docker compose`, copie `REDIS_URL`, `MAIL_QUEUE_NAME` y las variables `SMTP_*` en el `.env` raiz o en `.env.prod`. El `api` usa `REDIS_URL` y `MAIL_QUEUE_NAME`; el `mailer` usa ambas y ademas `SMTP_*`.
 
+Si alguna clave en `.env.prod` empieza por `$`, dejela entre comillas simples para que Docker Compose la trate como valor literal y no la expanda como variable.
+
 ### 3.2. Configurar el chat con n8n
 
 En `apps/web/.env.local` configure el webhook del flujo conversacional:
