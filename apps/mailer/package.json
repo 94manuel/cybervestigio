@@ -1,0 +1,25 @@
+{
+  "name": "@cybervestigio/mailer",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Worker de correo de CyberVestigio consumiendo colas desde Redis.",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "tsx src/main.ts",
+    "start:prod": "node dist/main.js",
+    "lint": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "bullmq": "^5.61.2",
+    "dotenv": "^16.6.1",
+    "ioredis": "^5.8.2",
+    "nodemailer": "^6.10.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/nodemailer": "^6.4.17",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

@@ -54,7 +54,7 @@ npm install
 ### 2. Iniciar servicios base
 
 ```bash
-docker compose up -d postgres n8n
+docker compose up -d postgres redis n8n
 ```
 
 ### 3. Configurar variables de entorno
@@ -63,6 +63,7 @@ En macOS o Linux:
 
 ```bash
 cp apps/api/.env.example apps/api/.env
+cp apps/mailer/.env.example apps/mailer/.env
 cp apps/web/.env.example apps/web/.env.local
 ```
 
@@ -70,6 +71,7 @@ En Windows PowerShell:
 
 ```powershell
 Copy-Item apps/api/.env.example apps/api/.env
+Copy-Item apps/mailer/.env.example apps/mailer/.env
 Copy-Item apps/web/.env.example apps/web/.env.local
 ```
 
@@ -77,9 +79,20 @@ Antes de producción, cambie obligatoriamente `JWT_SECRET`, `ADMIN_INITIAL_PASSW
 
 ### 3.1. Configurar correo saliente
 
-La API envia correos por SMTP. Para la cuenta `contacto@cybervestigio.com`, configure en `apps/api/.env`:
+La API ya no envia correos directamente. Ahora encola jobs en Redis y el microservicio `mailer` consume esa cola y entrega por SMTP. Configure:
+
+En `apps/api/.env`:
 
 ```env
+REDIS_URL=redis://localhost:6379
+MAIL_QUEUE_NAME=cybervestigio-mail
+```
+
+En `apps/mailer/.env`:
+
+```env
+REDIS_URL=redis://localhost:6379
+MAIL_QUEUE_NAME=cybervestigio-mail
 SMTP_HOST=smtp.hostinger.com
 SMTP_PORT=587
 SMTP_SECURE=false
@@ -88,9 +101,9 @@ SMTP_PASS=coloque-aqui-la-clave-real
 SMTP_FROM=contacto@cybervestigio.com
 ```
 
-El dato IMAP (`imap.hostinger.com`) sirve para clientes de correo, no para los envios salientes de la API.
+El dato IMAP (`imap.hostinger.com`) sirve para clientes de correo, no para los envios salientes del microservicio.
 
-Si ejecuta la plataforma con `docker compose`, copie las mismas variables SMTP en el `.env` raiz o en `.env.prod` para que lleguen al contenedor `api`.
+Si ejecuta la plataforma con `docker compose`, copie `REDIS_URL`, `MAIL_QUEUE_NAME` y las variables `SMTP_*` en el `.env` raiz o en `.env.prod`. El `api` usa `REDIS_URL` y `MAIL_QUEUE_NAME`; el `mailer` usa ambas y ademas `SMTP_*`.
 
 ### 3.2. Configurar el chat con n8n
 
@@ -165,7 +178,7 @@ ADMIN_INITIAL_EMAIL=admin@cybervestigio.co
 ADMIN_INITIAL_PASSWORD=Cambiar-Esta-Clave-123!
 ```
 
-Los envios de facturas y cualquier otro correo del backend usan la configuracion SMTP centralizada del API.
+Los envios de facturas y cualquier otro correo del backend deben pasar por la cola Redis y el microservicio `mailer`.
 
 ## Páginas implementadas
 

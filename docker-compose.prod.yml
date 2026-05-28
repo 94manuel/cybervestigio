@@ -18,6 +18,18 @@ services:
       timeout: 5s
       retries: 10
 
+  redis:
+    image: redis:7-alpine
+    container_name: cybervestigio-redis
+    restart: unless-stopped
+    volumes:
+      - cybervestigio_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
   n8n:
     image: n8nio/n8n:latest
     container_name: cybervestigio-n8n
@@ -49,6 +61,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
       NODE_ENV: production
       PORT: 4000
@@ -59,12 +73,8 @@ services:
       ADMIN_INITIAL_NAME: ${ADMIN_INITIAL_NAME}
       ADMIN_INITIAL_EMAIL: ${ADMIN_INITIAL_EMAIL}
       ADMIN_INITIAL_PASSWORD: ${ADMIN_INITIAL_PASSWORD}
-      SMTP_HOST: ${SMTP_HOST}
-      SMTP_PORT: ${SMTP_PORT}
-      SMTP_SECURE: ${SMTP_SECURE}
-      SMTP_USER: ${SMTP_USER}
-      SMTP_PASS: ${SMTP_PASS}
-      SMTP_FROM: ${SMTP_FROM}
+      REDIS_URL: ${REDIS_URL}
+      MAIL_QUEUE_NAME: ${MAIL_QUEUE_NAME}
     expose:
       - "4000"
     healthcheck:
@@ -76,6 +86,26 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+
+  mailer:
+    <<: *app-base
+    build:
+      context: ./apps/mailer
+      dockerfile: Dockerfile.prod
+    container_name: cybervestigio-mailer
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      REDIS_URL: ${REDIS_URL}
+      MAIL_QUEUE_NAME: ${MAIL_QUEUE_NAME}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_SECURE: ${SMTP_SECURE}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      SMTP_FROM: ${SMTP_FROM}
 
   web:
     <<: *app-base
@@ -108,4 +138,5 @@ services:
 
 volumes:
   cybervestigio_pg_data:
+  cybervestigio_redis_data:
   cybervestigio_n8n_data:
