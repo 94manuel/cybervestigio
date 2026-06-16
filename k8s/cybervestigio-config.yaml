@@ -16,12 +16,16 @@ stringData:
   SMTP_PORT: "587"
   SMTP_SECURE: "false"
   SMTP_USER: contacto@cybervestigio.com
-  SMTP_PASS: CAMBIA_ESTA_CLAVE_SMTP
+  SMTP_PASS: $fDNe6EGB5pWbgb
   SMTP_FROM: contacto@cybervestigio.com
   N8N_BASIC_AUTH_USER: admin
-  N8N_BASIC_AUTH_PASSWORD: CAMBIA_ESTA_CLAVE_N8N
-  N8N_ENCRYPTION_KEY: CAMBIA_ESTA_CLAVE_LARGA_N8N
-  N8N_CHAT_WEBHOOK_TOKEN: CAMBIA_ESTE_TOKEN_CHAT
+  N8N_BASIC_AUTH_PASSWORD: cybervestigio@n8n
+  N8N_ENCRYPTION_KEY: cybervestigio@encryption
+  N8N_CHAT_WEBHOOK_TOKEN: cybervestigio@chat
+  MINIO_ROOT_USER: minioadmin
+  MINIO_ROOT_PASSWORD: cybervestigio@minio
+  MINIO_ACCESS_KEY: minioadmin
+  MINIO_SECRET_KEY: cybervestigio@minio
 ---
 apiVersion: v1
 kind: ConfigMap
