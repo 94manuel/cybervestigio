@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
+import { basicWafMiddleware } from './common/middleware/basic-waf.middleware';
 import { AppModule } from './app.module';
 
 async function bootstrap(): Promise<void> {
@@ -10,8 +11,12 @@ async function bootstrap(): Promise<void> {
   const config = app.get(ConfigService);
   const frontendUrl = config.get<string>('FRONTEND_URL') ?? 'http://localhost:3000';
   const port = config.get<number>('PORT') ?? 4000;
+  const wafEnabled = String(config.get<string>('WAF_ENABLED') ?? 'true').toLowerCase() !== 'false';
 
   app.use(helmet());
+  if (wafEnabled) {
+    app.use(basicWafMiddleware);
+  }
   app.enableCors({
     origin: frontendUrl,
     credentials: true,

@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cybervestigio-secrets
+  namespace: cybervestigio
+type: Opaque
+stringData:
+  POSTGRES_DB: cybervestigio
+  POSTGRES_USER: cybervestigio
+  POSTGRES_PASSWORD: CAMBIA_ESTA_CLAVE_POSTGRES
+  JWT_SECRET: CAMBIA_ESTA_CLAVE_JWT_DE_32_CARACTERES
+  ADMIN_INITIAL_NAME: Administrador CyberVestigio
+  ADMIN_INITIAL_EMAIL: admin@cybervestigio.com
+  ADMIN_INITIAL_PASSWORD: CAMBIA_ESTA_CLAVE_ADMIN
+  SMTP_HOST: smtp.hostinger.com
+  SMTP_PORT: "587"
+  SMTP_SECURE: "false"
+  SMTP_USER: contacto@cybervestigio.com
+  SMTP_PASS: CAMBIA_ESTA_CLAVE_SMTP
+  SMTP_FROM: contacto@cybervestigio.com
+  N8N_BASIC_AUTH_USER: admin
+  N8N_BASIC_AUTH_PASSWORD: CAMBIA_ESTA_CLAVE_N8N
+  N8N_ENCRYPTION_KEY: CAMBIA_ESTA_CLAVE_LARGA_N8N
+  N8N_CHAT_WEBHOOK_TOKEN: CAMBIA_ESTE_TOKEN_CHAT
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cybervestigio-config
+  namespace: cybervestigio
+data:
+  FRONTEND_URL: https://cybervestigio.com
+  NEXT_PUBLIC_SITE_URL: https://cybervestigio.com
+  JWT_EXPIRES_IN: 8h
+  REDIS_URL: redis://redis-service:6379
+  MAIL_QUEUE_NAME: cybervestigio-mail
+  API_INTERNAL_URL: http://api-service:4000/api/v1
+  N8N_HOST: n8n.cybervestigio.com
+  N8N_EDITOR_BASE_URL: https://n8n.cybervestigio.com
+  N8N_WEBHOOK_URL: https://n8n.cybervestigio.com/
+  N8N_CHAT_WEBHOOK_URL: https://n8n.cybervestigio.com/webhook/cybervestigio-chat

@@ -7,6 +7,7 @@ const links = [
   { href: '/metodologia', label: 'Metodología' },
   { href: '/nosotros', label: 'Nosotros' },
   { href: '/contacto', label: 'Contacto' },
+  { href: '/cuenta/login', label: 'Mi cuenta' },
 ];
 
 export function SiteHeader() {

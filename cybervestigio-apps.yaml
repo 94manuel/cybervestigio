@@ -1,0 +1,202 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: cybervestigio
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api
+  template:
+    metadata:
+      labels:
+        app: api
+    spec:
+      containers:
+        - name: api
+          image: cybervestigio-api:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 4000
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: PORT
+              value: "4000"
+            - name: FRONTEND_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cybervestigio-config
+                  key: FRONTEND_URL
+            - name: DATABASE_URL
+              value: postgresql://cybervestigio:CAMBIA_ESTA_CLAVE_POSTGRES@postgres-service:5432/cybervestigio?schema=public
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: cybervestigio-secrets
+                  key: JWT_SECRET
+            - name: JWT_EXPIRES_IN
+              valueFrom:
+                configMapKeyRef:
+                  name: cybervestigio-config
+                  key: JWT_EXPIRES_IN
+            - name: ADMIN_INITIAL_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: cybervestigio-secrets
+                  key: ADMIN_INITIAL_NAME
+            - name: ADMIN_INITIAL_EMAIL
+              valueFrom:
+                secretKeyRef:
+                  name: cybervestigio-secrets
+                  key: ADMIN_INITIAL_EMAIL
+            - name: ADMIN_INITIAL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: cybervestigio-secrets
+                  key: ADMIN_INITIAL_PASSWORD
+            - name: REDIS_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cybervestigio-config
+                  key: REDIS_URL
+            - name: MAIL_QUEUE_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: cybervestigio-config
+                  key: MAIL_QUEUE_NAME
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-service
+  namespace: cybervestigio
+spec:
+  selector:
+    app: api
+  ports:
+    - port: 4000
+      targetPort: 4000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mailer
+  namespace: cybervestigio
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mailer
+  template:
+    metadata:
+      labels:
+        app: mailer
+    spec:
+      containers:
+        - name: mailer
+          image: cybervestigio-mailer:local
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: REDIS_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cybervestigio-config
+                  key: REDIS_URL
+            - name: MAIL_QUEUE_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: cybervestigio-config
+                  key: MAIL_QUEUE_NAME
+            - name: SMTP_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: cybervestigio-secrets
+                  key: SMTP_HOST
+            - name: SMTP_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: cybervestigio-secrets
+                  key: SMTP_PORT
+            - name: SMTP_SECURE
+              valueFrom:
+                secretKeyRef:
+                  name: cybervestigio-secrets
+                  key: SMTP_SECURE
+            - name: SMTP_USER
+              valueFrom:
+                secretKeyRef:
+                  name: cybervestigio-secrets
+                  key: SMTP_USER
+            - name: SMTP_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: cybervestigio-secrets
+                  key: SMTP_PASS
+            - name: SMTP_FROM
+              valueFrom:
+                secretKeyRef:
+                  name: cybervestigio-secrets
+                  key: SMTP_FROM
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+  namespace: cybervestigio
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: web
+  template:
+    metadata:
+      labels:
+        app: web
+    spec:
+      containers:
+        - name: web
+          image: cybervestigio-web:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: PORT
+              value: "3000"
+            - name: API_INTERNAL_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cybervestigio-config
+                  key: API_INTERNAL_URL
+            - name: NEXT_PUBLIC_SITE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cybervestigio-config
+                  key: NEXT_PUBLIC_SITE_URL
+            - name: N8N_CHAT_WEBHOOK_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cybervestigio-config
+                  key: N8N_CHAT_WEBHOOK_URL
+            - name: N8N_CHAT_WEBHOOK_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: cybervestigio-secrets
+                  key: N8N_CHAT_WEBHOOK_TOKEN
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-service
+  namespace: cybervestigio
+spec:
+  selector:
+    app: web
+  ports:
+    - port: 3000
+      targetPort: 3000  

@@ -30,14 +30,63 @@ enum InvoiceStatus {
   CANCELLED
 }
 
+enum ExternalUserStatus {
+  PENDING
+  ACTIVE
+  BLOCKED
+}
+
+enum CartStatus {
+  ACTIVE
+  CHECKED_OUT
+  ABANDONED
+}
+
+enum ServiceOrderStatus {
+  PENDING_PAYMENT
+  PAID
+  CANCELLED
+}
+
+enum PaymentMethod {
+  NEQUI
+  DAVIPLATA
+  PSE
+  TRANSFERENCIA
+  TARJETA
+  EFECTIVO
+}
+
+enum PaymentStatus {
+  PENDING
+  CONFIRMED
+  REJECTED
+}
+
+enum ExpedienteStatus {
+  ABIERTO
+  EN_PROCESO
+  CERRADO
+}
+
+enum ReceiptStatus {
+  POR_PAGAR
+  PAGADO
+  VENCIDO
+  ANULADO
+}
+
 model AdminUser {
-  id           String    @id @default(uuid())
-  name         String
-  email        String    @unique
-  passwordHash String
-  role         AdminRole @default(ADMIN)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id                  String         @id @default(uuid())
+  name                String
+  email               String         @unique
+  passwordHash        String
+  role                AdminRole      @default(ADMIN)
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  createdExternalUsers ExternalUser[] @relation("ExternalUserCreatedBy")
+  createdExpedientes  Expediente[]   @relation("ExpedienteCreatedBy")
+  createdReceipts     Receipt[]      @relation("ReceiptCreatedBy")
 }
 
 model ContactRequest {
@@ -67,6 +116,8 @@ model Service {
   active      Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  cartItems   ServiceCartItem[]
+  orderItems  ServiceOrderItem[]
 }
 
 model SiteSetting {
@@ -113,16 +164,17 @@ model Invoice {
 }
 
 model Client {
-  id        String   @id @default(uuid())
-  fullName  String
-  cedula    String   @unique
-  email     String
-  phone     String?
-  company   String?
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  invoices  Invoice[]
+  id           String        @id @default(uuid())
+  fullName     String
+  cedula       String        @unique
+  email        String
+  phone        String?
+  company      String?
+  active       Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  invoices     Invoice[]
+  externalUser ExternalUser?
 
   @@index([fullName])
 }
@@ -141,4 +193,156 @@ model BillingService {
 
   @@index([sector])
   @@index([active])
+}
+
+model ExternalUser {
+  id                     String             @id @default(uuid())
+  fullName               String
+  email                  String             @unique
+  phone                  String?
+  passwordHash           String
+  status                 ExternalUserStatus @default(PENDING)
+  mustChangePassword     Boolean            @default(true)
+  twoFactorEnabled       Boolean            @default(true)
+  twoFactorCodeHash      String?
+  twoFactorExpiresAt     DateTime?
+  passwordResetCodeHash  String?
+  passwordResetExpiresAt DateTime?
+  drivePrefix            String
+  lastLoginAt            DateTime?
+  createdByAdminId       String?
+  clientId               String?            @unique
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+  createdByAdmin         AdminUser?         @relation("ExternalUserCreatedBy", fields: [createdByAdminId], references: [id], onDelete: SetNull)
+  client                 Client?            @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  carts                  ServiceCart[]
+  orders                 ServiceOrder[]
+  expedientes            Expediente[]
+  receipts               Receipt[]
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model ServiceCart {
+  id           String      @id @default(uuid())
+  userId       String
+  status       CartStatus  @default(ACTIVE)
+  checkedOutAt DateTime?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  user         ExternalUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items        ServiceCartItem[]
+
+  @@index([userId, status])
+  @@index([createdAt])
+}
+
+model ServiceCartItem {
+  id                 String      @id @default(uuid())
+  cartId             String
+  serviceId          String?
+  serviceTitle       String
+  serviceDescription String?
+  quantity           Int         @default(1)
+  unitPrice          Decimal     @db.Decimal(12, 2)
+  lineTotal          Decimal     @db.Decimal(12, 2)
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+  cart               ServiceCart @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  service            Service?    @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+
+  @@index([cartId])
+  @@index([serviceId])
+}
+
+model ServiceOrder {
+  id               String           @id @default(uuid())
+  orderNumber      String           @unique
+  userId           String
+  status           ServiceOrderStatus @default(PENDING_PAYMENT)
+  paymentMethod    PaymentMethod
+  paymentStatus    PaymentStatus    @default(PENDING)
+  paymentReference String?
+  paymentNotes     String?
+  subtotal         Decimal          @db.Decimal(12, 2)
+  total            Decimal          @db.Decimal(12, 2)
+  currency         String           @default("COP")
+  paidAt           DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  user             ExternalUser     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items            ServiceOrderItem[]
+  expediente       Expediente?
+  receipts         Receipt[]
+
+  @@index([userId, status])
+  @@index([paymentStatus])
+  @@index([createdAt])
+}
+
+model ServiceOrderItem {
+  id                 String       @id @default(uuid())
+  orderId            String
+  serviceId          String?
+  serviceTitle       String
+  serviceDescription String?
+  quantity           Int          @default(1)
+  unitPrice          Decimal      @db.Decimal(12, 2)
+  lineTotal          Decimal      @db.Decimal(12, 2)
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  order              ServiceOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  service            Service?     @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@index([serviceId])
+}
+
+model Expediente {
+  id               String          @id @default(uuid())
+  code             String          @unique
+  userId           String
+  orderId          String?         @unique
+  createdByAdminId String?
+  title            String
+  description      String?
+  status           ExpedienteStatus @default(ABIERTO)
+  minioPrefix      String
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  user             ExternalUser    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  order            ServiceOrder?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  createdByAdmin   AdminUser?      @relation("ExpedienteCreatedBy", fields: [createdByAdminId], references: [id], onDelete: SetNull)
+  receipts         Receipt[]
+
+  @@index([userId, status])
+  @@index([createdAt])
+}
+
+model Receipt {
+  id               String        @id @default(uuid())
+  number           String        @unique
+  userId           String
+  expedienteId     String?
+  orderId          String?
+  status           ReceiptStatus @default(POR_PAGAR)
+  amount           Decimal       @db.Decimal(12, 2)
+  currency         String        @default("COP")
+  dueDate          DateTime?
+  paidAt           DateTime?
+  notes            String?
+  createdByAdminId String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  user             ExternalUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expediente       Expediente?   @relation(fields: [expedienteId], references: [id], onDelete: SetNull)
+  order            ServiceOrder? @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  createdByAdmin   AdminUser?    @relation("ReceiptCreatedBy", fields: [createdByAdminId], references: [id], onDelete: SetNull)
+
+  @@index([userId, status])
+  @@index([expedienteId])
+  @@index([orderId])
+  @@index([dueDate])
 }

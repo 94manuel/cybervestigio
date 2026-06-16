@@ -1,12 +1,15 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Response } from 'express';
 import { AdminRole } from '../generated/prisma/client';
 import { Roles } from '../common/auth/roles.decorator';
-import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { AuthenticatedRequest, JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { AdminService } from './admin.service';
 import { CreateAdminUserDto } from './dto/create-admin-user.dto';
+import { CreateExpedienteDto } from './dto/create-expediente.dto';
+import { CreateExpedienteUploadUrlDto } from './dto/create-expediente-upload-url.dto';
+import { CreateExternalUserDto } from './dto/create-external-user.dto';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { CreateBillingServiceDto } from './dto/create-billing-service.dto';
 import { CreateClientDto } from './dto/create-client.dto';
@@ -16,7 +19,9 @@ import { UpdateContactStatusDto } from './dto/update-contact-status.dto';
 import { UpdateAdminUserDto } from './dto/update-admin-user.dto';
 import { UpdateBillingServiceDto } from './dto/update-billing-service.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
+import { UpdateExternalUserDto } from './dto/update-external-user.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
+import { UpdateReceiptStatusDto } from './dto/update-receipt-status.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
 import { UpdateSiteSettingDto } from './dto/update-site-setting.dto';
 
@@ -26,6 +31,10 @@ import { UpdateSiteSettingDto } from './dto/update-site-setting.dto';
 @Controller('admin')
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
+
+  private getAdminId(request: AuthenticatedRequest): string | undefined {
+    return request.user?.sub;
+  }
 
   @Get('dashboard')
   @Roles(AdminRole.ADMIN, AdminRole.USER, AdminRole.SUPERVISOR)
@@ -109,6 +118,83 @@ export class AdminController {
   @ApiOperation({ summary: 'Actualizar cuenta administrativa' })
   updateUser(@Param('id') id: string, @Body() dto: UpdateAdminUserDto): Promise<object> {
     return this.adminService.updateUser(id, dto);
+  }
+
+  @Get('external-users')
+  @Roles(AdminRole.ADMIN, AdminRole.SUPERVISOR, AdminRole.USER)
+  @ApiOperation({ summary: 'Listar usuarios externos (clientes del portal)' })
+  getExternalUsers(@Query('search') search?: string): Promise<object[]> {
+    return this.adminService.getExternalUsers(search);
+  }
+
+  @Post('external-users')
+  @Roles(AdminRole.ADMIN, AdminRole.SUPERVISOR)
+  @ApiOperation({ summary: 'Crear usuario externo y notificar credenciales por correo' })
+  createExternalUser(@Body() dto: CreateExternalUserDto, @Req() request: AuthenticatedRequest): Promise<object> {
+    return this.adminService.createExternalUser(dto, this.getAdminId(request));
+  }
+
+  @Patch('external-users/:id')
+  @Roles(AdminRole.ADMIN, AdminRole.SUPERVISOR)
+  @ApiOperation({ summary: 'Actualizar usuario externo' })
+  updateExternalUser(
+    @Param('id') id: string,
+    @Body() dto: UpdateExternalUserDto,
+  ): Promise<object> {
+    return this.adminService.updateExternalUser(id, dto);
+  }
+
+  @Get('external-users/:id/expedientes')
+  @Roles(AdminRole.ADMIN, AdminRole.SUPERVISOR, AdminRole.USER)
+  @ApiOperation({ summary: 'Listar expedientes de un usuario externo' })
+  getExternalUserExpedientes(@Param('id') id: string): Promise<object[]> {
+    return this.adminService.getExternalUserExpedientes(id);
+  }
+
+  @Post('external-users/:id/expedientes')
+  @Roles(AdminRole.ADMIN, AdminRole.SUPERVISOR, AdminRole.USER)
+  @ApiOperation({ summary: 'Crear expediente para un usuario externo y opcionalmente su recibo' })
+  createExternalUserExpediente(
+    @Param('id') id: string,
+    @Body() dto: CreateExpedienteDto,
+    @Req() request: AuthenticatedRequest,
+  ): Promise<object> {
+    return this.adminService.createExternalUserExpediente(id, dto, this.getAdminId(request));
+  }
+
+  @Get('expedientes/:id/files')
+  @Roles(AdminRole.ADMIN, AdminRole.SUPERVISOR, AdminRole.USER)
+  @ApiOperation({ summary: 'Listar archivos de expediente en MinIO' })
+  getExpedienteFiles(@Param('id') id: string): Promise<object> {
+    return this.adminService.getExpedienteFiles(id);
+  }
+
+  @Post('expedientes/:id/upload-url')
+  @Roles(AdminRole.ADMIN, AdminRole.SUPERVISOR, AdminRole.USER)
+  @ApiOperation({ summary: 'Generar URL firmada para subir archivo al expediente (MinIO)' })
+  createExpedienteUploadUrl(
+    @Param('id') id: string,
+    @Body() dto: CreateExpedienteUploadUrlDto,
+  ): Promise<object> {
+    return this.adminService.createExpedienteUploadUrl(id, dto);
+  }
+
+  @Get('receipts')
+  @Roles(AdminRole.ADMIN, AdminRole.SUPERVISOR, AdminRole.USER)
+  @ApiOperation({ summary: 'Listar recibos administrativos' })
+  getReceipts(@Query('userId') userId?: string): Promise<object[]> {
+    return this.adminService.getReceipts(userId);
+  }
+
+  @Patch('receipts/:id/status')
+  @Roles(AdminRole.ADMIN, AdminRole.SUPERVISOR, AdminRole.USER)
+  @ApiOperation({ summary: 'Actualizar estado de recibo (pagado, por pagar, vencido, anulado)' })
+  updateReceiptStatus(
+    @Param('id') id: string,
+    @Body() dto: UpdateReceiptStatusDto,
+    @Req() request: AuthenticatedRequest,
+  ): Promise<object> {
+    return this.adminService.updateReceiptStatus(id, dto, this.getAdminId(request));
   }
 
   @Get('clients')

@@ -28,6 +28,7 @@ export async function SiteFooter({ showChat = true }: Readonly<{ showChat?: bool
             <h3>Contacto</h3>
             <p>{settings.contactEmail}</p>
             <p>{settings.location}</p>
+            <Link className="admin-link" href="/cuenta/login">Portal de clientes</Link>
             <Link className="admin-link" href="/admin/login">Acceso administrativo</Link>
           </div>
         </div>

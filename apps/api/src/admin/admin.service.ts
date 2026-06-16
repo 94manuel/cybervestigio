@@ -1,20 +1,27 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { hash } from 'bcryptjs';
+import { randomBytes } from 'crypto';
 import * as XLSX from 'xlsx';
-import { ContactStatus, InvoiceStatus, Prisma } from '../generated/prisma/client';
+import { ContactStatus, ExternalUserStatus, InvoiceStatus, Prisma, ReceiptStatus } from '../generated/prisma/client';
 import { MailService } from '../mail/mail.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { StorageService } from '../storage/storage.service';
 import { CreateAdminUserDto } from './dto/create-admin-user.dto';
 import { CreateBillingServiceDto } from './dto/create-billing-service.dto';
 import { CreateClientDto } from './dto/create-client.dto';
+import { CreateExpedienteDto } from './dto/create-expediente.dto';
+import { CreateExpedienteUploadUrlDto } from './dto/create-expediente-upload-url.dto';
+import { CreateExternalUserDto } from './dto/create-external-user.dto';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { SendInvoiceDto } from './dto/send-invoice.dto';
 import { UpdateAdminUserDto } from './dto/update-admin-user.dto';
 import { UpdateBillingServiceDto } from './dto/update-billing-service.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
+import { UpdateExternalUserDto } from './dto/update-external-user.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
+import { UpdateReceiptStatusDto } from './dto/update-receipt-status.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
 import { UpdateSiteSettingDto } from './dto/update-site-setting.dto';
 
@@ -38,6 +45,7 @@ export class AdminService {
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
     private readonly mailService: MailService,
+    private readonly storageService: StorageService,
   ) {}
 
   private readonly userSelection = {
@@ -99,6 +107,87 @@ export class AdminService {
     createdAt: true,
     updatedAt: true,
   };
+
+  private readonly externalUserSelection = {
+    id: true,
+    fullName: true,
+    email: true,
+    phone: true,
+    status: true,
+    mustChangePassword: true,
+    drivePrefix: true,
+    clientId: true,
+    createdByAdminId: true,
+    lastLoginAt: true,
+    createdAt: true,
+    updatedAt: true,
+  };
+
+  private readonly expedienteSelection = {
+    id: true,
+    code: true,
+    userId: true,
+    orderId: true,
+    createdByAdminId: true,
+    title: true,
+    description: true,
+    status: true,
+    minioPrefix: true,
+    createdAt: true,
+    updatedAt: true,
+  };
+
+  private readonly receiptSelection = {
+    id: true,
+    number: true,
+    userId: true,
+    expedienteId: true,
+    orderId: true,
+    status: true,
+    amount: true,
+    currency: true,
+    dueDate: true,
+    paidAt: true,
+    notes: true,
+    createdByAdminId: true,
+    createdAt: true,
+    updatedAt: true,
+  };
+
+  private decimalToNumber(value: Prisma.Decimal | number | string): number {
+    return Number(value);
+  }
+
+  private createTemporaryPassword(): string {
+    const entropy = randomBytes(6).toString('base64url');
+    return `Cv-${entropy}-2026!`;
+  }
+
+  private async createExpedienteCode(): Promise<string> {
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+      const candidate = `EXP-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`;
+      const exists = await this.prisma.expediente.findUnique({
+        where: { code: candidate },
+        select: { id: true },
+      });
+      if (!exists) return candidate;
+    }
+
+    return `EXP-${Date.now()}-${Math.floor(100000 + Math.random() * 900000)}`;
+  }
+
+  private async createReceiptNumber(): Promise<string> {
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+      const candidate = `REC-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`;
+      const exists = await this.prisma.receipt.findUnique({
+        where: { number: candidate },
+        select: { id: true },
+      });
+      if (!exists) return candidate;
+    }
+
+    return `REC-${Date.now()}-${Math.floor(100000 + Math.random() * 900000)}`;
+  }
 
   private normalizeLineItems(items?: Array<{ title: string; unitPrice: number; quantity?: number; serviceId?: string }>) {
     const normalized = (items ?? []).map((item) => {
@@ -325,6 +414,204 @@ export class AdminService {
       data,
       select: this.userSelection,
     });
+  }
+
+  getExternalUsers(search?: string): Promise<object[]> {
+    const normalized = search?.trim();
+
+    return this.prisma.externalUser.findMany({
+      where: normalized
+        ? {
+            OR: [
+              { fullName: { contains: normalized, mode: 'insensitive' } },
+              { email: { contains: normalized, mode: 'insensitive' } },
+            ],
+          }
+        : undefined,
+      orderBy: { createdAt: 'desc' },
+      select: {
+        ...this.externalUserSelection,
+        client: {
+          select: {
+            id: true,
+            fullName: true,
+            cedula: true,
+            email: true,
+          },
+        },
+      },
+      take: 300,
+    });
+  }
+
+  async createExternalUser(dto: CreateExternalUserDto, createdByAdminId?: string): Promise<object> {
+    const email = dto.email.toLowerCase().trim();
+    const existing = await this.prisma.externalUser.findUnique({ where: { email }, select: { id: true } });
+    if (existing) {
+      throw new BadRequestException('Ya existe un usuario externo registrado con ese correo.');
+    }
+
+    let linkedClientId: string | undefined;
+    const cedula = dto.clientCedula?.trim();
+    if (cedula) {
+      const client = await this.prisma.client.findUnique({ where: { cedula }, select: { id: true } });
+      if (client) {
+        linkedClientId = client.id;
+      } else {
+        const createdClient = await this.prisma.client.create({
+          data: {
+            fullName: dto.fullName.trim(),
+            cedula,
+            email,
+            phone: dto.phone?.trim() || null,
+            company: dto.company?.trim() || null,
+            active: true,
+          },
+          select: { id: true },
+        });
+        linkedClientId = createdClient.id;
+      }
+    }
+
+    const temporaryPassword = dto.password?.trim() || this.createTemporaryPassword();
+    const mustChangePassword = !dto.password;
+
+    const created = await this.prisma.externalUser.create({
+      data: {
+        fullName: dto.fullName.trim(),
+        email,
+        phone: dto.phone?.trim() || null,
+        passwordHash: await hash(temporaryPassword, 12),
+        status: dto.status ?? ExternalUserStatus.ACTIVE,
+        mustChangePassword,
+        drivePrefix: 'users/pending',
+        createdByAdminId: createdByAdminId || null,
+        clientId: linkedClientId,
+      },
+      select: this.externalUserSelection,
+    });
+
+    const updated = await this.prisma.externalUser.update({
+      where: { id: created.id },
+      data: { drivePrefix: `users/${created.id}` },
+      select: this.externalUserSelection,
+    });
+
+    if (dto.notifyByEmail !== false) {
+      await this.mailService.send(
+        {
+          to: updated.email,
+          subject: 'Cuenta creada en CyberVestigio',
+          text: [
+            `Hola ${updated.fullName},`,
+            '',
+            'Un administrador creo su cuenta de cliente en CyberVestigio.',
+            `Usuario: ${updated.email}`,
+            `Contrasena: ${temporaryPassword}`,
+            '',
+            'Al iniciar sesion se enviara un codigo de doble factor a este mismo correo.',
+          ].join('\n'),
+          html: `
+            <p>Hola ${updated.fullName},</p>
+            <p>Un administrador creo su cuenta de cliente en CyberVestigio.</p>
+            <ul>
+              <li><strong>Usuario:</strong> ${updated.email}</li>
+              <li><strong>Contrasena:</strong> ${temporaryPassword}</li>
+            </ul>
+            <p>Al iniciar sesion se enviara un codigo de doble factor a este mismo correo.</p>
+          `,
+        },
+        'correo de creacion de cuenta externa',
+      );
+    }
+
+    return {
+      user: updated,
+      generatedPassword: dto.password ? undefined : temporaryPassword,
+    };
+  }
+
+  async updateExternalUser(id: string, dto: UpdateExternalUserDto): Promise<object> {
+    const current = await this.prisma.externalUser.findUnique({ where: { id }, select: this.externalUserSelection });
+    if (!current) {
+      throw new NotFoundException('Usuario externo no encontrado.');
+    }
+
+    const nextEmail = dto.email?.toLowerCase().trim();
+    if (nextEmail && nextEmail !== current.email) {
+      const duplicate = await this.prisma.externalUser.findUnique({ where: { email: nextEmail }, select: { id: true } });
+      if (duplicate) {
+        throw new BadRequestException('Ya existe un usuario externo con ese correo.');
+      }
+    }
+
+    let linkedClientId = current.clientId || undefined;
+    const cedula = dto.clientCedula?.trim();
+    if (cedula) {
+      const client = await this.prisma.client.findUnique({ where: { cedula }, select: { id: true } });
+      if (client) {
+        linkedClientId = client.id;
+      } else {
+        const createdClient = await this.prisma.client.create({
+          data: {
+            fullName: dto.fullName?.trim() || current.fullName,
+            cedula,
+            email: nextEmail || current.email,
+            phone: dto.phone?.trim() || current.phone || null,
+            company: dto.company?.trim() || null,
+            active: true,
+          },
+          select: { id: true },
+        });
+        linkedClientId = createdClient.id;
+      }
+    }
+
+    const data: Prisma.ExternalUserUncheckedUpdateInput = {
+      fullName: dto.fullName?.trim(),
+      email: nextEmail,
+      phone: dto.phone?.trim() || (dto.phone === '' ? null : undefined),
+      status: dto.status,
+      clientId: linkedClientId,
+    };
+
+    if (dto.password?.trim()) {
+      data.passwordHash = await hash(dto.password.trim(), 12);
+      data.mustChangePassword = true;
+    }
+
+    const updated = await this.prisma.externalUser.update({
+      where: { id },
+      data,
+      select: this.externalUserSelection,
+    });
+
+    if (dto.notifyByEmail && dto.password?.trim()) {
+      await this.mailService.send(
+        {
+          to: updated.email,
+          subject: 'Actualizacion de acceso CyberVestigio',
+          text: [
+            `Hola ${updated.fullName},`,
+            '',
+            'Un administrador actualizo su acceso al portal de clientes.',
+            `Usuario: ${updated.email}`,
+            `Contrasena temporal: ${dto.password.trim()}`,
+          ].join('\n'),
+          html: `
+            <p>Hola ${updated.fullName},</p>
+            <p>Un administrador actualizo su acceso al portal de clientes.</p>
+            <ul>
+              <li><strong>Usuario:</strong> ${updated.email}</li>
+              <li><strong>Contrasena temporal:</strong> ${dto.password.trim()}</li>
+            </ul>
+          `,
+        },
+        'correo de actualizacion de cuenta externa',
+      );
+    }
+
+    return updated;
   }
 
   getClients(search?: string): Promise<object[]> {
@@ -620,6 +907,232 @@ export class AdminService {
       },
       select: this.invoiceSelection,
     });
+  }
+
+  async getExternalUserExpedientes(userId: string): Promise<object[]> {
+    const user = await this.prisma.externalUser.findUnique({ where: { id: userId }, select: { id: true } });
+    if (!user) {
+      throw new NotFoundException('Usuario externo no encontrado.');
+    }
+
+    const expedientes = await this.prisma.expediente.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        order: {
+          select: {
+            id: true,
+            orderNumber: true,
+            status: true,
+            paymentStatus: true,
+            total: true,
+            currency: true,
+            paidAt: true,
+          },
+        },
+        receipts: {
+          orderBy: { createdAt: 'desc' },
+          select: this.receiptSelection,
+        },
+      },
+    });
+
+    return expedientes.map((expediente) => ({
+      ...expediente,
+      order: expediente.order
+        ? {
+            ...expediente.order,
+            total: this.decimalToNumber(expediente.order.total),
+          }
+        : null,
+      receipts: expediente.receipts.map((receipt) => ({
+        ...receipt,
+        amount: this.decimalToNumber(receipt.amount),
+      })),
+    }));
+  }
+
+  async createExternalUserExpediente(userId: string, dto: CreateExpedienteDto, createdByAdminId?: string): Promise<object> {
+    const user = await this.prisma.externalUser.findUnique({
+      where: { id: userId },
+      select: { id: true, drivePrefix: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Usuario externo no encontrado.');
+    }
+
+    let orderTotal = 0;
+    if (dto.orderId) {
+      const order = await this.prisma.serviceOrder.findFirst({
+        where: { id: dto.orderId, userId },
+        select: { id: true, total: true },
+      });
+      if (!order) {
+        throw new NotFoundException('La orden asociada no existe para ese usuario.');
+      }
+      orderTotal = this.decimalToNumber(order.total);
+    }
+
+    const code = await this.createExpedienteCode();
+    const minioPrefix = `${user.drivePrefix}/expedientes/${code}`;
+    await this.storageService.ensureFolder(minioPrefix);
+
+    const response = await this.prisma.$transaction(async (tx) => {
+      const expediente = await tx.expediente.create({
+        data: {
+          code,
+          userId,
+          orderId: dto.orderId?.trim() || null,
+          createdByAdminId: createdByAdminId || null,
+          title: dto.title.trim(),
+          description: dto.description?.trim() || null,
+          status: dto.status,
+          minioPrefix,
+        },
+        select: this.expedienteSelection,
+      });
+
+      let receipt: null | object = null;
+
+      if (dto.createReceipt) {
+        const amount = dto.receiptAmount ?? orderTotal;
+        if (!Number.isFinite(amount) || amount <= 0) {
+          throw new BadRequestException('Debe indicar un valor valido para el recibo del expediente.');
+        }
+
+        const number = dto.receiptNumber?.trim() || (await this.createReceiptNumber());
+        const duplicate = await tx.receipt.findUnique({ where: { number }, select: { id: true } });
+        if (duplicate) {
+          throw new BadRequestException('Ya existe un recibo con ese numero.');
+        }
+
+        const createdReceipt = await tx.receipt.create({
+          data: {
+            number,
+            userId,
+            expedienteId: expediente.id,
+            orderId: dto.orderId?.trim() || null,
+            status: dto.receiptStatus ?? ReceiptStatus.POR_PAGAR,
+            amount: new Prisma.Decimal(amount),
+            currency: 'COP',
+            dueDate: dto.receiptDueDate ? new Date(dto.receiptDueDate) : null,
+            paidAt:
+              (dto.receiptStatus ?? ReceiptStatus.POR_PAGAR) === ReceiptStatus.PAGADO
+                ? new Date()
+                : null,
+            notes: dto.receiptNotes?.trim() || null,
+            createdByAdminId: createdByAdminId || null,
+          },
+          select: this.receiptSelection,
+        });
+
+        receipt = {
+          ...createdReceipt,
+          amount: this.decimalToNumber(createdReceipt.amount),
+        };
+      }
+
+      return { expediente, receipt };
+    });
+
+    return response;
+  }
+
+  async getReceipts(userId?: string): Promise<object[]> {
+    const receipts = await this.prisma.receipt.findMany({
+      where: userId ? { userId } : undefined,
+      orderBy: { createdAt: 'desc' },
+      select: {
+        ...this.receiptSelection,
+        user: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    return receipts.map((receipt) => ({
+      ...receipt,
+      amount: this.decimalToNumber(receipt.amount),
+    }));
+  }
+
+  async updateReceiptStatus(id: string, dto: UpdateReceiptStatusDto, adminId?: string): Promise<object> {
+    const current = await this.prisma.receipt.findUnique({ where: { id }, select: this.receiptSelection });
+    if (!current) {
+      throw new NotFoundException('Recibo no encontrado.');
+    }
+
+    const updated = await this.prisma.receipt.update({
+      where: { id },
+      data: {
+        status: dto.status,
+        dueDate: dto.dueDate ? new Date(dto.dueDate) : undefined,
+        paidAt:
+          dto.status === ReceiptStatus.PAGADO
+            ? (dto.paidAt ? new Date(dto.paidAt) : new Date())
+            : dto.status === ReceiptStatus.POR_PAGAR || dto.status === ReceiptStatus.VENCIDO
+              ? null
+              : undefined,
+        notes: dto.notes?.trim() || (dto.notes === '' ? null : undefined),
+        createdByAdminId: adminId || current.createdByAdminId,
+      },
+      select: this.receiptSelection,
+    });
+
+    return {
+      ...updated,
+      amount: this.decimalToNumber(updated.amount),
+    };
+  }
+
+  async getExpedienteFiles(expedienteId: string): Promise<object> {
+    const expediente = await this.prisma.expediente.findUnique({
+      where: { id: expedienteId },
+      select: this.expedienteSelection,
+    });
+
+    if (!expediente) {
+      throw new NotFoundException('Expediente no encontrado.');
+    }
+
+    const files = await this.storageService.listFiles(expediente.minioPrefix);
+    const filesWithLinks = await Promise.all(
+      files.map(async (file) => ({
+        ...file,
+        downloadUrl: await this.storageService.getDownloadUrl(file.key),
+        publicUrl: this.storageService.getPublicObjectUrl(file.key),
+      })),
+    );
+
+    return {
+      expediente,
+      files: filesWithLinks,
+    };
+  }
+
+  async createExpedienteUploadUrl(expedienteId: string, dto: CreateExpedienteUploadUrlDto): Promise<object> {
+    const expediente = await this.prisma.expediente.findUnique({
+      where: { id: expedienteId },
+      select: this.expedienteSelection,
+    });
+
+    if (!expediente) {
+      throw new NotFoundException('Expediente no encontrado.');
+    }
+
+    const upload = await this.storageService.getUploadUrl(expediente.minioPrefix, dto.fileName, dto.contentType);
+
+    return {
+      expediente,
+      ...upload,
+      publicUrl: this.storageService.getPublicObjectUrl(upload.key),
+      expiresInSeconds: 900,
+    };
   }
 
   async exportInvoicesWorkbook(): Promise<Buffer> {
