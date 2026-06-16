@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: api
-          image: cybervestigio-api:local
+          image: cybervestigio-api:prod
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 4000

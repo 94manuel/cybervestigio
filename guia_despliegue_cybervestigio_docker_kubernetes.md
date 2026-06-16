@@ -394,7 +394,7 @@ git pull origin master
 ```bash
 cd ~/cybervestigio
 
-docker build -t cybervestigio-api:local -f apps/api/Dockerfile.prod apps/api
+docker build -t cybervestigio-api:prod -f apps/api/Dockerfile.prod apps/api
 docker build -t cybervestigio-web:local -f apps/web/Dockerfile.prod apps/web
 docker build -t cybervestigio-mailer:local -f apps/mailer/Dockerfile.prod apps/mailer
 ```
@@ -408,7 +408,7 @@ docker images | grep cybervestigio
 ### 11.2 Cargar imágenes a Minikube
 
 ```bash
-minikube image load cybervestigio-api:local
+minikube image load cybervestigio-api:prod
 minikube image load cybervestigio-web:local
 minikube image load cybervestigio-mailer:local
 ```
@@ -423,7 +423,7 @@ minikube image ls | grep cybervestigio
 >
 > ```bash
 > eval $(minikube docker-env)
-> docker build -t cybervestigio-api:local -f apps/api/Dockerfile.prod apps/api
+> docker build -t cybervestigio-api:prod -f apps/api/Dockerfile.prod apps/api
 > docker build -t cybervestigio-web:local -f apps/web/Dockerfile.prod apps/web
 > docker build -t cybervestigio-mailer:local -f apps/mailer/Dockerfile.prod apps/mailer
 > ```
@@ -699,7 +699,7 @@ spec:
     spec:
       containers:
         - name: api
-          image: cybervestigio-api:local
+          image: cybervestigio-api:prod
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 4000
@@ -1370,11 +1370,11 @@ Flujo recomendado:
 cd ~/cybervestigio
 git pull origin master
 
-docker build -t cybervestigio-api:local -f apps/api/Dockerfile.prod apps/api
+docker build -t cybervestigio-api:prod -f apps/api/Dockerfile.prod apps/api
 docker build -t cybervestigio-web:local -f apps/web/Dockerfile.prod apps/web
 docker build -t cybervestigio-mailer:local -f apps/mailer/Dockerfile.prod apps/mailer
 
-minikube image load cybervestigio-api:local
+minikube image load cybervestigio-api:prod
 minikube image load cybervestigio-web:local
 minikube image load cybervestigio-mailer:local
 
