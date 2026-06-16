@@ -30,7 +30,7 @@ spec:
                   name: cybervestigio-config
                   key: FRONTEND_URL
             - name: DATABASE_URL
-              value: postgresql://cybervestigio:CAMBIA_ESTA_CLAVE_POSTGRES@postgres-service:5432/cybervestigio?schema=public
+              value: postgresql://cybervestigio:cybervestigio$postgres@postgres-service:5432/cybervestigio?schema=public
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:
@@ -66,6 +66,66 @@ spec:
                 configMapKeyRef:
                   name: cybervestigio-config
                   key: MAIL_QUEUE_NAME
+            - name: MINIO_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: cybervestigio-config
+                  key: MINIO_ENDPOINT
+            - name: MINIO_PUBLIC_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cybervestigio-config
+                  key: MINIO_PUBLIC_URL
+            - name: MINIO_REGION
+              valueFrom:
+                configMapKeyRef:
+                  name: cybervestigio-config
+                  key: MINIO_REGION
+            - name: MINIO_BUCKET
+              valueFrom:
+                configMapKeyRef:
+                  name: cybervestigio-config
+                  key: MINIO_BUCKET
+            - name: MINIO_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: cybervestigio-secrets
+                  key: MINIO_ACCESS_KEY
+            - name: MINIO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: cybervestigio-secrets
+                  key: MINIO_SECRET_KEY
+            - name: PAYMENT_NEQUI_ACCOUNT
+              valueFrom:
+                configMapKeyRef:
+                  name: cybervestigio-config
+                  key: PAYMENT_NEQUI_ACCOUNT
+            - name: PAYMENT_DAVIPLATA_ACCOUNT
+              valueFrom:
+                configMapKeyRef:
+                  name: cybervestigio-config
+                  key: PAYMENT_DAVIPLATA_ACCOUNT
+            - name: PAYMENT_TRANSFER_ACCOUNT
+              valueFrom:
+                configMapKeyRef:
+                  name: cybervestigio-config
+                  key: PAYMENT_TRANSFER_ACCOUNT
+            - name: PAYMENT_PSE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cybervestigio-config
+                  key: PAYMENT_PSE_URL
+            - name: PORTAL_DEFAULT_SERVICE_PRICE
+              valueFrom:
+                configMapKeyRef:
+                  name: cybervestigio-config
+                  key: PORTAL_DEFAULT_SERVICE_PRICE
+            - name: WAF_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: cybervestigio-config
+                  key: WAF_ENABLED
 ---
 apiVersion: v1
 kind: Service
