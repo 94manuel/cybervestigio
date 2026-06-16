@@ -43,3 +43,13 @@ data:
   N8N_EDITOR_BASE_URL: https://n8n.cybervestigio.com
   N8N_WEBHOOK_URL: https://n8n.cybervestigio.com/
   N8N_CHAT_WEBHOOK_URL: https://n8n.cybervestigio.com/webhook/cybervestigio-chat
+  MINIO_ENDPOINT: http://minio-service:9000
+  MINIO_PUBLIC_URL: https://minio.cybervestigio.com
+  MINIO_REGION: us-east-1
+  MINIO_BUCKET: cybervestigio-drive
+  PAYMENT_NEQUI_ACCOUNT: "3000000000"
+  PAYMENT_DAVIPLATA_ACCOUNT: "3000000001"
+  PAYMENT_TRANSFER_ACCOUNT: "Banco ejemplo cuenta 123-456-789"
+  PAYMENT_PSE_URL: https://www.pse.com.co/
+  PORTAL_DEFAULT_SERVICE_PRICE: "250000"
+  WAF_ENABLED: "true"
