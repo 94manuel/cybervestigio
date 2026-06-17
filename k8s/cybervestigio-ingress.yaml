@@ -3,12 +3,6 @@ kind: Ingress
 metadata:
   name: cybervestigio-ingress
   namespace: cybervestigio
-  annotations:
-    nginx.ingress.kubernetes.io/enable-modsecurity: "true"
-    nginx.ingress.kubernetes.io/enable-owasp-core-rules: "true"
-    nginx.ingress.kubernetes.io/modsecurity-snippet: |
-      SecRuleEngine On
-      SecRequestBodyAccess On
 spec:
   ingressClassName: nginx
   rules:
@@ -22,6 +16,7 @@ spec:
                 name: web-service
                 port:
                   number: 3000
+
     - host: www.cybervestigio.com
       http:
         paths:
@@ -32,6 +27,7 @@ spec:
                 name: web-service
                 port:
                   number: 3000
+
     - host: api.cybervestigio.com
       http:
         paths:
@@ -42,6 +38,7 @@ spec:
                 name: api-service
                 port:
                   number: 4000
+
     - host: n8n.cybervestigio.com
       http:
         paths:
@@ -52,6 +49,7 @@ spec:
                 name: n8n-service
                 port:
                   number: 5678
+
     - host: minio.cybervestigio.com
       http:
         paths:
