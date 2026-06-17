@@ -20,7 +20,7 @@ stringData:
   SMTP_PASS: $fDNe6EGB5pWbgb
   SMTP_FROM: contacto@cybervestigio.com
   N8N_BASIC_AUTH_USER: admin
-  N8N_BASIC_AUTH_PASSWORD: cybervestigio@n8n
+  N8N_BASIC_AUTH_PASSWORD: CAMBIA_ESTA_CLAVE_LARGA_N8N
   N8N_ENCRYPTION_KEY: cybervestigio@encryption
   N8N_CHAT_WEBHOOK_TOKEN: cybervestigio@chat
   MINIO_ROOT_USER: minioadmin
