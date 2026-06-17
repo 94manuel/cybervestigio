@@ -7,7 +7,8 @@ type: Opaque
 stringData:
   POSTGRES_DB: cybervestigio
   POSTGRES_USER: cybervestigio
-  POSTGRES_PASSWORD: CAMBIA_ESTA_CLAVE_POSTGRES
+  POSTGRES_PASSWORD: cybervestigio7postgres
+  DATABASE_URL: postgresql://cybervestigio:cybervestigio7postgres@postgres-service:5432/cybervestigio?schema=public
   JWT_SECRET: CAMBIA_ESTA_CLAVE_JWT_DE_32_CARACTERES
   ADMIN_INITIAL_NAME: Administrador CyberVestigio
   ADMIN_INITIAL_EMAIL: admin@cybervestigio.com

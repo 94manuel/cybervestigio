@@ -30,7 +30,10 @@ spec:
                   name: cybervestigio-config
                   key: FRONTEND_URL
             - name: DATABASE_URL
-              value: postgresql://cybervestigio:cybervestigio$postgres@postgres-service:5432/cybervestigio?schema=public
+              valueFrom:
+                secretKeyRef:
+                  name: cybervestigio-secrets
+                  key: DATABASE_URL
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:
