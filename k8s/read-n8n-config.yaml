@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: n8n-config-reader
+  namespace: cybervestigio
+spec:
+  restartPolicy: Never
+  containers:
+    - name: reader
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          echo "Contenido de /mnt/n8n:"
+          ls -la /mnt/n8n
+          echo "Archivo config:"
+          cat /mnt/n8n/config
+          sleep 3600
+      volumeMounts:
+        - name: n8n-data
+          mountPath: /mnt/n8n
+  volumes:
+    - name: n8n-data
+      persistentVolumeClaim:
+        claimName: n8n-pvc
