@@ -52,3 +52,24 @@ spec:
                 name: n8n-service
                 port:
                   number: 5678
+    - host: minio.cybervestigio.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: minio-service
+                port:
+                  number: 9000
+
+    - host: minio-console.cybervestigio.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: minio-service
+                port:
+                  number: 9001
